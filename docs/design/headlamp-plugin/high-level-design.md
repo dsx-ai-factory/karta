@@ -15,11 +15,11 @@ Today there is no GUI for Karta workload trees. Users can inspect Karta CRs and 
 
 ## 2. Goals
 
-- **G1 (P0)** — Provide a unified workloads table across all Karta-described kinds with live status phases, accessible to any Headlamp user without extra RBAC.
-- **G2 (P0/P1)** — Provide a workload detail page showing the component/instance tree, vitals tiles, and a flat resource table for any Karta-described workload.
-- **G3 (P0)** — Provide a definitions view listing all Karta CRs with live instance counts and operator Ready status.
-- **G4 (P0)** — Reuse Karta's existing computation logic (`pkg/tree`, `pkg/resource`) for tree building, pod attribution, and ready-count rollups — the same logic that serves the CLI.
-- **G5 (P0)** — Ship as a distributable Headlamp plugin that embeds the latest Karta build, with semver releases and an Artifact Hub listing. The WASM binary is built from the Karta repository as part of the release process.
+- **G1** — Provide a unified workloads table across all Karta-described kinds with live status phases, accessible to any Headlamp user without extra RBAC.
+- **G2** — Provide a workload detail page showing the component/instance tree, vitals tiles, and a flat resource table for any Karta-described workload.
+- **G3** — Provide a definitions view listing all Karta CRs with live instance counts and operator Ready status.
+- **G4** — Reuse Karta's existing computation logic (`pkg/tree`, `pkg/resource`) for tree building, pod attribution, and ready-count rollups — the same logic that serves the CLI.
+- **G5** — Ship as a distributable Headlamp plugin that embeds the latest Karta build, with semver releases and an Artifact Hub listing. The WASM binary is built from the Karta repository as part of the release process.
 
 ---
 
@@ -133,13 +133,17 @@ headlamp-plugin/
 ├── artifacthub-pkg.yml
 ├── logo.png
 ├── locales/                          # i18n strings
+├── engine/                           # separate Go module, compiled to WASM
+│   ├── go.mod
+│   ├── main.go                       # WASM entrypoint, exposes bindings via syscall/js
+│   ├── karta.wasm                    # build output, gitignored (`make plugin-wasm`)
+│   └── wasm_exec.js                  # build output, gitignored (copied from the Go toolchain)
 └── src/
     ├── headlamp-plugin.d.ts          # type shim (present in every Headlamp plugin)
     ├── index.tsx                     # entrypoint — registers routes & sidebar
     ├── utils.ts                      # shared utilities (quantities, flow layout, hierarchy rows)
-    ├── wasm/
-    │   ├── engine.ts                 # WASM module loader & bindings
-    │   └── karta.wasm                # committed binary
+    ├── lib/
+    │   └── engine.ts                 # WASM module loader & bindings
     ├── components/
     │   ├── StatusPhaseChips/
     │   ├── workloads/                # R1 — unified workloads table
@@ -154,6 +158,8 @@ headlamp-plugin/
         └── workload.ts               # typed wrappers for workload objects (PyTorchJob, LWSJob, etc.)
 ```
 
+`engine/` is a separate Go module (its own `go.mod`) compiled with `GOOS=js GOARCH=wasm`, kept outside `src/` since it is Go source, not plugin JS/TS. `engine/karta.wasm` and `engine/wasm_exec.js` are not committed — they are build artifacts produced by `make plugin-wasm` and copied into the plugin bundle at build time via the `headlamp.extraDist` entry in `package.json`.
+
 ### 5.3 R1 — Unified Workloads Table
 
 A single table showing all live workload instances across all Karta-described kinds.
@@ -161,8 +167,8 @@ A single table showing all live workload instances across all Karta-described ki
 **Columns:** Name · Kind · Namespace · Status chips · Age
 
 - **Workload list:**
-  1. **Karta installed** — kinds are discovered from the `kartas.run.ai` CRs in the cluster.
-  2. **Karta not installed** — kinds are discovered from the embedded catalog (`docs/catalog/`).
+  1. **Karta installed** — kinds are discovered from the `kartas.run.ai` CRs in the cluster and merged with the embedded catalog bundled in the WASM engine (see 5.1's merge behavior).
+  2. **Karta not installed** — kinds are discovered from the embedded catalog (`docs/catalog/`) bundled in the WASM engine.
   In both cases, workload instances are fetched via `useList()` from `@kinvolk/headlamp-plugin`, one call per kind, and rendered using MUI `Table`.
 - **Status chips** — evaluated by calling `EvaluatePhases()` from the WASM engine (`pkg/status`), rendered as `StatusPhaseChips` component.
 - **Hook isolation** — since the number of kinds is data-driven, a dedicated `<KindFetcher>` child component is rendered per kind, each owning exactly one `useList()` call (satisfies React's Rules of Hooks).
