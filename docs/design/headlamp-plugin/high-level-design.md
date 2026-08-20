@@ -13,17 +13,7 @@ Today there is no GUI for Karta workload trees. Users can inspect Karta CRs and 
 
 ---
 
-## 2. Goals
-
-- **G1** — Provide a unified workloads table across all Karta-described kinds with live status phases, accessible to any Headlamp user without extra RBAC.
-- **G2** — Provide a workload detail page showing the component/instance tree, vitals tiles, and a flat resource table for any Karta-described workload.
-- **G3** — Provide a definitions view listing all Karta CRs with live instance counts and operator Ready status.
-- **G4** — Reuse Karta's existing computation logic (`pkg/tree`, `pkg/resource`) for tree building, pod attribution, and ready-count rollups — the same logic that serves the CLI.
-- **G5** — Ship as a distributable Headlamp plugin that embeds the latest Karta build, with semver releases and an Artifact Hub listing. The WASM binary is built from the Karta repository as part of the release process.
-
----
-
-## 3. Glossary
+## 2. Glossary
 
 
 | Term                          | Definition                                                                                                                                                                |
@@ -38,7 +28,7 @@ Today there is no GUI for Karta workload trees. Users can inspect Karta CRs and 
 
 ---
 
-## 4. Proposed design — high level
+## 3. Proposed design — high level
 
 The plugin is a standard Headlamp JS bundle loaded at runtime with no server-side dependencies — all reads go through Headlamp's existing list/watch hooks using the user's own credentials. Karta's computation logic is consumed via a bundled WASM engine. Definitions are sourced from Karta CRs in the cluster when available, falling back to the embedded catalog.
 
@@ -54,13 +44,13 @@ The plugin adds three views for v1:
 
 Map integration (R3) and Custom Resources page enrichment (R4) are out of scope for v1 — both are P2 (post-v1).
 
-### 4.1 Deployment modes
+### 3.1 Deployment modes
 
 Headlamp supports two deployment modes: **desktop app** and **in-cluster**. This plugin targets the desktop app — the Plugin Catalog (through which the plugin is distributed via Artifact Hub) is supported only in this mode. In-cluster mode supports plugins but via a different installation process that is out of scope for this document.
 
 **Plugin installation** ([guide](https://headlamp.dev/docs/latest/installation/desktop/plugins-install-desktop)) — installed via the Plugin Catalog UI (Settings → Plugins → search "Karta") or by manually extracting the tarball to `~/.config/Headlamp/plugins` (macOS/Linux) or `%APPDATA%/Headlamp/Config/plugins` (Windows). Updates require manual reinstall.
 
-### 4.2 Technology stack
+### 3.2 Technology stack
 
 
 | Dependency                                                                        | Source                                       | Purpose                                                          |
@@ -77,7 +67,7 @@ React is mandatory for this plugin: Headlamp is itself built with React and expo
 
 Headlamp loads all plugins synchronously on startup, so bundle size directly affects startup time. Only `@xyflow/react` is bundled; all other dependencies are resolved from Headlamp's shared runtime.
 
-### 4.3 Repo and CI/CD
+### 3.3 Repo and CI/CD
 
 The plugin lives inside the Karta repo (`headlamp-plugin/`). The following constraints apply:
 
@@ -89,13 +79,13 @@ The plugin lives inside the Karta repo (`headlamp-plugin/`). The following const
 
 ---
 
-## 5. Detailed design
+## 4. Detailed design
 
 ### Architecture diagram
 
 ![Architecture diagram](karta-headlamp-plugin-flow.png)
 
-### 5.1 Karta Engine Integration
+### 4.1 Karta Engine Integration
 
 The plugin needs Karta's computation logic for tree building, pod attribution, and ready-count rollups. The flow splits into two concerns:
 
@@ -104,7 +94,7 @@ The plugin needs Karta's computation logic for tree building, pod attribution, a
 - **Karta installed** → merge cluster CRs with the embedded catalog. For any GVK present in both, the cluster CR takes priority and is passed to the WASM engine. For GVKs present only in the embedded catalog (not yet installed on the cluster), the catalog definition is still used. This means the plugin surfaces all Karta-described kinds regardless of whether each one has a cluster CR — cluster and catalog definitions are additive, not mutually exclusive.
 - **Karta not installed** → use catalog definitions embedded in the engine (from `docs/catalog/`), so the plugin remains functional with zero Karta CRs in the cluster.
 
-**Computation** (tree building, pod attribution, ready-count rollups, status phase evaluation) — always delegated to the WASM engine regardless of whether Karta is installed. `pkg/tree` + `pkg/resource` are compiled to WebAssembly, bundled with the plugin, and evaluated in the browser. See #11 for the alternative approach considered.
+**Computation** (tree building, pod attribution, ready-count rollups, status phase evaluation) — always delegated to the WASM engine regardless of whether Karta is installed. `pkg/tree` + `pkg/resource` are compiled to WebAssembly, bundled with the plugin, and evaluated in the browser. See #10 for the alternative approach considered.
 
 **Planned WASM interface** — the following Karta packages and their entry points are planned to be exposed to the JS plugin via the WASM module:
 
@@ -118,7 +108,7 @@ The plugin needs Karta's computation logic for tree building, pod attribution, a
 
 *Note: exact function signatures to be confirmed against the Karta codebase before implementation.*
 
-### 5.2 Frontend detailed design
+### 4.2 Frontend detailed design
 
 *To be written as a follow-up document.* This section will cover the frontend code organization in detail: directory and file structure under `headlamp-plugin/src/`, where each piece of logic lives (hooks, components, utilities, WASM bindings), and how responsibilities are divided across functions and modules. It is intentionally kept separate from the high-level design so reviewers can go over the implementation structure independently once the high-level is approved.
 
@@ -160,14 +150,14 @@ headlamp-plugin/
 
 `engine/` is a separate Go module (its own `go.mod`) compiled with `GOOS=js GOARCH=wasm`, kept outside `src/` since it is Go source, not plugin JS/TS. `engine/karta.wasm` and `engine/wasm_exec.js` are not committed — they are build artifacts produced by `make plugin-wasm` and copied into the plugin bundle at build time via the `headlamp.extraDist` entry in `package.json`.
 
-### 5.3 R1 — Unified Workloads Table
+### 4.3 R1 — Unified Workloads Table
 
 A single table showing all live workload instances across all Karta-described kinds.
 
 **Columns:** Name · Kind · Namespace · Status chips · Age
 
 - **Workload list:**
-  1. **Karta installed** — kinds are discovered from the `kartas.run.ai` CRs in the cluster and merged with the embedded catalog bundled in the WASM engine (see 5.1's merge behavior).
+  1. **Karta installed** — kinds are discovered from the `kartas.run.ai` CRs in the cluster and merged with the embedded catalog bundled in the WASM engine (see 4.1's merge behavior).
   2. **Karta not installed** — kinds are discovered from the embedded catalog (`docs/catalog/`) bundled in the WASM engine.
   In both cases, workload instances are fetched via `useList()` from `@kinvolk/headlamp-plugin`, one call per kind, and rendered using MUI `Table`.
 - **Status chips** — evaluated by calling `EvaluatePhases()` from the WASM engine (`pkg/status`), rendered as `StatusPhaseChips` component.
@@ -176,7 +166,7 @@ A single table showing all live workload instances across all Karta-described ki
 
 ![Workloads table](workloads.png)
 
-### 5.4 R2 — Workload Detail Page
+### 4.4 R2 — Workload Detail Page
 
 A detail page for a single workload, reached from the workloads table at `/karta/workloads/:gvk/:namespace/:name`. Composed of four parts:
 
@@ -189,7 +179,7 @@ A detail page for a single workload, reached from the workloads table at `/karta
 
 ![Workload detail page](workload-details-page.png)
 
-### 5.5 R5 — Definitions View
+### 4.5 R5 — Definitions View
 
 A table listing all Karta CRs in the cluster, giving users visibility into which workload kinds are defined and their live instance counts.
 
@@ -203,7 +193,7 @@ A table listing all Karta CRs in the cluster, giving users visibility into which
 - **Ready** — operator condition chip read from the Karta CR status, rendered as a `StatusPhaseChips` component. Three states: green when the operator is running and the condition is Ready; red with a reason + message tooltip when the condition is not Ready; grey "Unknown" with an "operator may not be running" hint when no status condition is present on the CR. The Karta operator is not required for cluster support — the plugin uses this condition when present, never requires it.
 - **Error states** — RBAC failure and CRD missing are shown as distinct states, visually different from each other and from zero instances. RBAC failure is an error state (something is wrong). CRD missing is an informational state — expected when using catalog-embedded definitions on a cluster where that workload CRD has not been installed yet (e.g. no operator deployed it); it is not treated as a failure.
 
-### 5.6 Performance and multi-cluster
+### 4.6 Performance and multi-cluster
 
 **Performance:** Engine evaluation is memoized per `(definition resourceVersion, workload resourceVersion)` and lazy — only computed for the currently visible page. Target: smooth at 500 workloads / 5,000 pods; usable at 2,000 / 20,000.
 
@@ -211,17 +201,17 @@ A table listing all Karta CRs in the cluster, giving users visibility into which
 
 ---
 
-## 6. Cross-cutting concerns
+## 5. Cross-cutting concerns
 
-### 6.1 Security considerations
+### 5.1 Security considerations
 
 The plugin uses the user's own Kubernetes credentials and Headlamp's existing list/watch hooks. No extra service account, ClusterRole, or RoleBinding is required. No secrets are stored or transmitted by the plugin. If the user lacks permissions to list some resources, those resources produce empty output — no explicit error is shown for what they cannot access. Partial access is handled naturally: a user with access to only a subset of namespaces sees only the workloads in those namespaces.
 
-### 6.2 Privacy and data handling
+### 5.2 Privacy and data handling
 
 N/A — the plugin reads only Kubernetes resource metadata through the user's own credentials, stores no data, and transmits nothing outside the browser.
 
-### 6.3 Reliability and failure modes
+### 5.3 Reliability and failure modes
 
 
 | Failure scenario                      | Behavior                                                                 |
@@ -232,13 +222,13 @@ N/A — the plugin reads only Kubernetes resource metadata through the user's ow
 | RBAC blocks a workload kind           | Error state shown for that kind — visually distinct from zero results    |
 
 
-### 6.4 Performance and scalability
+### 5.4 Performance and scalability
 
-See #5.7. Memoization per `(definition resourceVersion, workload resourceVersion)` keeps repeated evaluations cheap. WASM evaluation is synchronous and single-threaded; at scale (2,000+ workloads) a Web Worker offload may be needed — deferred to post-v1.
+See #4.6. Memoization per `(definition resourceVersion, workload resourceVersion)` keeps repeated evaluations cheap. WASM evaluation is synchronous and single-threaded; at scale (2,000+ workloads) a Web Worker offload may be needed — deferred to post-v1.
 
 ---
 
-## 7. Testing strategy
+## 6. Testing strategy
 
 
 | Level       | What                                                                                                                           | How                            |
@@ -246,12 +236,12 @@ See #5.7. Memoization per `(definition resourceVersion, workload resourceVersion
 | Unit        | Pure logic modules (`flowLayout.ts`, `quantities.ts`, `hierarchyRows.ts`)                                                      | Vitest                         |
 | Component   | `StatusPhaseChips` (all 9 phases + severity order), `InstancesCell` (loading / resolved / CRD missing / error)                 | Vitest + React Testing Library |
 | Integration | Plugin loaded in Headlamp against a real cluster with Karta CRs                                                                | TBD                             |
-| E2E         | Acceptance checks per G1–G5: workloads appear, detail page renders, definitions show live counts, engine produces correct tree | TBD                             |
+| E2E         | Acceptance checks: workloads appear, detail page renders, definitions show live counts, engine produces correct tree | TBD                             |
 
 
 ---
 
-## 8. Installing the plugin in Headlamp
+## 7. Installing the plugin in Headlamp
 
 ### Desktop app (macOS / Linux / Windows)
 
@@ -285,7 +275,7 @@ Open the Headlamp desktop app — it picks up plugins in development mode automa
 
 ---
 
-## 9. Headlamp catalog
+## 8. Headlamp catalog
 
 The Headlamp desktop app includes a Plugin Catalog (Settings → Plugins) that lets users discover and install plugins. The catalog is backed by [Artifact Hub](https://artifacthub.io) — a CNCF web-based marketplace for Kubernetes packages. Getting the Karta plugin listed there makes it findable and installable directly from the Headlamp UI.
 
@@ -349,19 +339,19 @@ annotations:
 
 ---
 
-## 10. Rollout and migration plan
+## 9. Rollout and migration plan
 
-### 10.1 Backwards compatibility
+### 9.1 Backwards compatibility
 
 The plugin is versioned independently of the Karta operator. The README carries a compatibility matrix (`plugin x.y supports Karta >= a.b`). The current cluster stamps `run.ai/karta-*` labels on Karta CRs; the planned rename to `karta.run.ai/*` must be handled during transition — the plugin reads both label schemes until the old one is fully retired.
 
-### 10.2 Upgrade / downgrade procedure
+### 9.2 Upgrade / downgrade procedure
 
 The plugin is distributed as a Headlamp plugin tarball. Upgrade = install newer tarball. Downgrade = install older tarball. No persistent state or migrations — the plugin is stateless.
 
 ---
 
-## 11. Alternatives considered
+## 10. Alternatives considered
 
 ### Server-side service
 
@@ -419,7 +409,7 @@ The committed-binary approach was chosen for v1 for simplicity. The npm package 
 
 ---
 
-## 12. Appendix
+## 11. Appendix
 
 ### A. Karta status phases
 
