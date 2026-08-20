@@ -94,7 +94,7 @@ The plugin needs Karta's computation logic for tree building, pod attribution, a
 - **Karta installed** → merge cluster CRs with the embedded catalog. For any GVK present in both, the cluster CR takes priority and is passed to the WASM engine. For GVKs present only in the embedded catalog (not yet installed on the cluster), the catalog definition is still used. This means the plugin surfaces all Karta-described kinds regardless of whether each one has a cluster CR — cluster and catalog definitions are additive, not mutually exclusive.
 - **Karta not installed** → use catalog definitions embedded in the engine (from `docs/catalog/`), so the plugin remains functional with zero Karta CRs in the cluster.
 
-**Computation** (tree building, pod attribution, ready-count rollups, status phase evaluation) — always delegated to the WASM engine regardless of whether Karta is installed. `pkg/tree` + `pkg/resource` are compiled to WebAssembly, bundled with the plugin, and evaluated in the browser. See #10 for the alternative approach considered.
+**Computation** (tree building, pod attribution, ready-count rollups, status phase evaluation) — always delegated to the WASM engine regardless of whether Karta is installed. `pkg/tree` + `pkg/resource` are compiled to WebAssembly, bundled with the plugin, and evaluated in the browser.
 
 **Planned WASM interface** — the following Karta packages and their entry points are planned to be exposed to the JS plugin via the WASM module:
 
@@ -263,141 +263,19 @@ Open the Headlamp desktop app — it picks up plugins in development mode automa
 
 ---
 
-## 8. Headlamp catalog
+## 8. Rollout and migration plan
 
-The Headlamp desktop app includes a Plugin Catalog (Settings → Plugins) that lets users discover and install plugins. The catalog is backed by [Artifact Hub](https://artifacthub.io) — a CNCF web-based marketplace for Kubernetes packages. Getting the Karta plugin listed there makes it findable and installable directly from the Headlamp UI.
-
-> **Note:** Headlamp only allows plugin downloads from GitHub, GitLab, and BitBucket.
-
-Reference: [Headlamp — Publishing plugins](https://headlamp.dev/docs/latest/development/plugins/publishing/)
-
-### Step 1 — Add `artifacthub-repo.yml` (one-time, repo root)
-
-This file identifies the repository owner. Add it at the root of the Karta repo:
-
-```yaml
-# artifacthub-repo.yml
-owners:
-  - name: NVIDIA Karta
-    email: karta-maintainers@nvidia.com
-```
-
-### Step 2 — Build and create a GitHub release
-
-```bash
-cd headlamp-plugin/
-npm install
-npm run build
-npm run package
-# generates: headlamp-k8s-karta-<version>.tar.gz + SHA256 checksum
-```
-
-Create a GitHub release tagged with semver (e.g. `plugin-v1.0.0`) and upload the tarball and checksum as release assets.
-
-### Step 3 — Add `artifacthub-pkg.yml` (per release, at repo root, sibling to `headlamp-plugin/`)
-
-This file provides the metadata Artifact Hub displays for each version:
-
-```yaml
-# artifacthub-pkg.yml
-version: 1.0.0
-name: karta
-displayName: Karta
-createdAt: "2026-09-01T00:00:00Z"
-description: Headlamp plugin for Karta workload visibility — component trees, normalized status phases, and live resource usage across all Karta-described kinds.
-logoURL: https://raw.githubusercontent.com/nvidia/karta/main/headlamp-plugin/docs/logo.png
-links:
-  - name: Source
-    url: https://github.com/nvidia/karta/tree/main/headlamp-plugin
-  - name: Documentation
-    url: https://github.com/nvidia/karta/blob/main/headlamp-plugin/README.md
-annotations:
-  headlamp/plugin/archive-url: https://github.com/nvidia/karta/releases/download/plugin-v1.0.0/headlamp-k8s-karta-1.0.0.tar.gz
-  headlamp/plugin/archive-checksum: "SHA256:<checksum>"
-  headlamp/plugin/version-compat: ">=0.20"
-  headlamp/plugin/distro-compat: "desktop"
-```
-
-### Step 4 — Register in Artifact Hub (one-time)
-
-1. Sign in at [artifacthub.io](https://artifacthub.io) (create an org if needed, e.g. under the existing NVIDIA org).
-2. Control Panel → Add → choose **Headlamp plugin** as repository kind.
-3. Enter a name and the GitHub repository URL.
-4. Submit — Artifact Hub crawls the repo and picks up `artifacthub-pkg.yml` automatically.
-
----
-
-## 9. Rollout and migration plan
-
-### 9.1 Backwards compatibility
+### 8.1 Backwards compatibility
 
 The plugin is versioned independently of the Karta operator. The README carries a compatibility matrix (`plugin x.y supports Karta >= a.b`). The current cluster stamps `run.ai/karta-*` labels on Karta CRs; the planned rename to `karta.run.ai/*` must be handled during transition — the plugin reads both label schemes until the old one is fully retired.
 
-### 9.2 Upgrade / downgrade procedure
+### 8.2 Upgrade / downgrade procedure
 
 The plugin is distributed as a Headlamp plugin tarball. Upgrade = install newer tarball. Downgrade = install older tarball. No persistent state or migrations — the plugin is stateless.
 
 ---
 
-## 10. Alternatives considered
-
-### Server-side service
-
-Expose Karta's logic via a new lightweight service; plugin calls it over HTTP instead of using a bundled WASM engine.
-
-**Advantages:**
-
-1. Plugin bundle is smaller — pure JS with no embedded binary.
-2. No version coupling between the plugin and Karta — the service can be updated independently, keeping CI simpler.
-
-**Disadvantages:**
-
-1. User must deploy and operate an additional service — extra installation burden.
-2. The service needs access to cluster information (RBAC context, workload objects) that the plugin currently reads directly — requires a data-passing mechanism and auth model to be designed.
-3. Adds a server-side component that requires observability (logs, metrics, traces) and increases operational complexity.
-4. No immediate value: Karta needs to be installed on the cluster before any value can be derived from it.
-
-The WASM engine approach was chosen instead: no additional service to deploy, the plugin works immediately after installation, and plugin and library versions are always in sync.
-
-### WASM binary distributed as an npm package (npmjs.org)
-
-Instead of committing the WASM binary directly to the repo, it could be published as a versioned npm package (e.g. `@nvidia/karta-wasm`) on the public npm registry and declared as a dependency in the plugin's `package.json`.
-
-**Advantages:**
-
-1. Explicit, auditable version pinning via `package.json` — no manual binary commits required.
-2. Standard npm update flow (`npm install @nvidia/karta-wasm@x.y.z`) instead of manually replacing a binary file.
-3. Keeps binary blobs out of the git history.
-4. Fully public — no authentication required for consumers, frictionless for OSS contributors and the broader Headlamp community.
-
-**Disadvantages:**
-
-1. Requires creating and maintaining an `@nvidia` npm.org org and a publish token.
-2. Requires publishing and maintaining an additional npm package with its own release pipeline.
-3. Adds an external registry dependency — the plugin build breaks if the package is unavailable.
-4. More operational overhead for the initial setup (npm org, publish token, CI integration).
-
-### WASM binary distributed via GitHub Packages (GitHub npm registry)
-
-The same package could instead be published to GitHub Packages (`npm.pkg.github.com`) under the existing `nvidia` GitHub org, avoiding the need for a separate npm.org account.
-
-**Advantages:**
-
-1. No separate npm.org account or org required — uses the existing `nvidia` GitHub org.
-2. Explicit, auditable version pinning via `package.json` — no manual binary commits required.
-3. Keeps binary blobs out of the git history.
-
-**Limitations:**
-
-1. GitHub Packages requires authentication even for public packages (`read:packages` scope). Anyone running `npm install` from source needs a GitHub token and a `.npmrc` pointing to `npm.pkg.github.com` — including external contributors.
-2. End users installing the plugin via Headlamp's Plugin Catalog are **not** affected — they download a pre-built tarball from GitHub Releases that already contains the WASM binary and never touch the registry. The auth friction is limited to developers building from source.
-3. To mitigate this for external contributors, a `make fetch-wasm` target could download the pre-built binary directly from GitHub Releases, bypassing registry auth entirely. Contributors who don't need to modify the Go engine would never need a GitHub token or Go toolchain.
-
-The committed-binary approach was chosen for v1 for simplicity. The npm package approach remains a viable future improvement once the release cadence is established.
-
----
-
-## 11. Appendix
+## 9. Appendix
 
 ### A. Karta status phases
 
