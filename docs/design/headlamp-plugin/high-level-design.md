@@ -251,16 +251,6 @@ The Headlamp desktop app supports installing plugins directly from the UI or by 
 2. Search for "Karta" and click Install.
 3. Restart Headlamp.
 
-**Manual installation:**
-
-```bash
-# macOS / Linux
-PLUGIN_DIR="$HOME/.config/Headlamp/plugins"
-mkdir -p "$PLUGIN_DIR/karta"
-tar -xzf headlamp-k8s-karta-<version>.tar.gz -C "$PLUGIN_DIR/karta"
-# Restart Headlamp
-```
-
 ### Development mode
 
 ```bash
