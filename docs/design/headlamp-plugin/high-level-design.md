@@ -115,12 +115,12 @@ The plugin needs Karta's computation logic for tree building, pod attribution, a
 **Planned file structure:**
 
 ```
+artifacthub-pkg.yml                   # per-release metadata for Artifact Hub, sibling to headlamp-plugin/
 headlamp-plugin/
 ├── package.json
 ├── package-lock.json
 ├── tsconfig.json
 ├── README.md
-├── artifacthub-pkg.yml
 ├── logo.png
 ├── locales/                          # i18n strings
 ├── engine/                           # separate Go module, compiled to WASM
@@ -306,7 +306,7 @@ npm run package
 
 Create a GitHub release tagged with semver (e.g. `plugin-v1.0.0`) and upload the tarball and checksum as release assets.
 
-### Step 3 — Add `artifacthub-pkg.yml` (per release, under `headlamp-plugin/`)
+### Step 3 — Add `artifacthub-pkg.yml` (per release, at repo root, sibling to `headlamp-plugin/`)
 
 This file provides the metadata Artifact Hub displays for each version:
 
