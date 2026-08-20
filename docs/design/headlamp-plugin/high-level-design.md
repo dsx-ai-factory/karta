@@ -193,11 +193,9 @@ A table listing all Karta CRs in the cluster, giving users visibility into which
 - **Ready** — operator condition chip read from the Karta CR status, rendered as a `StatusPhaseChips` component. Three states: green when the operator is running and the condition is Ready; red with a reason + message tooltip when the condition is not Ready; grey "Unknown" with an "operator may not be running" hint when no status condition is present on the CR. The Karta operator is not required for cluster support — the plugin uses this condition when present, never requires it.
 - **Error states** — RBAC failure and CRD missing are shown as distinct states, visually different from each other and from zero instances. RBAC failure is an error state (something is wrong). CRD missing is an informational state — expected when using catalog-embedded definitions on a cluster where that workload CRD has not been installed yet (e.g. no operator deployed it); it is not treated as a failure.
 
-### 4.6 Performance and multi-cluster
+### 4.6 Multi-cluster
 
-**Performance:** Engine evaluation is memoized per `(definition resourceVersion, workload resourceVersion)` and lazy — only computed for the currently visible page. Target: smooth at 500 workloads / 5,000 pods; usable at 2,000 / 20,000.
-
-**Multi-cluster:** The plugin operates per-cluster — each cluster has its own Karta CRs, workload instances, and engine state. No cross-cluster aggregation is in scope for v1.
+The plugin operates per-cluster — each cluster has its own Karta CRs, workload instances, and engine state. No cross-cluster aggregation is in scope for v1.
 
 ---
 
@@ -224,7 +222,7 @@ N/A — the plugin reads only Kubernetes resource metadata through the user's ow
 
 ### 5.4 Performance and scalability
 
-See #4.6. Memoization per `(definition resourceVersion, workload resourceVersion)` keeps repeated evaluations cheap. WASM evaluation is synchronous and single-threaded; at scale (2,000+ workloads) a Web Worker offload may be needed — deferred to post-v1.
+Memoization per `(definition resourceVersion, workload resourceVersion)` keeps repeated evaluations cheap. WASM evaluation is synchronous and single-threaded; at scale (2,000+ workloads) a Web Worker offload may be needed — deferred to post-v1.
 
 ---
 
