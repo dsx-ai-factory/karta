@@ -360,19 +360,16 @@ func RaySuspended() recorder.StateCheck {
 	}
 }
 
-// RayJobInitializing matches a RayJob before its job runs: jobStatus PENDING, or empty while the RayJob
-// brings up its cluster and it is not suspended (jobDeploymentStatus Initializing/Running, or empty).
+// RayJobInitializing matches a RayJob before its job runs, on the operator's own named signals: the
+// submitted job is PENDING, or the operator reports jobDeploymentStatus Initializing while it brings the
+// Ray cluster up.
 func RayJobInitializing() recorder.StateCheck {
 	return func(u *unstructured.Unstructured) bool {
-		js, _, _ := unstructured.NestedString(u.Object, "status", "jobStatus")
-		if js == "PENDING" {
+		if js, _, _ := unstructured.NestedString(u.Object, "status", "jobStatus"); js == "PENDING" {
 			return true
 		}
-		if js != "" {
-			return false
-		}
 		ds, _, _ := unstructured.NestedString(u.Object, "status", "jobDeploymentStatus")
-		return ds != "Suspended" && ds != "Suspending"
+		return ds == "Initializing"
 	}
 }
 
