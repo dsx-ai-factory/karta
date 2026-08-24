@@ -14,3 +14,9 @@ import (
 func Suspend() *recorder.Action {
 	return &recorder.Action{Type: recorder.ActionSuspend, Patch: []byte(`{"spec":{"suspend":true}}`)}
 }
+
+// ResumeRunPolicy clears spec.runPolicy.suspend, where Kubeflow jobs (PyTorchJob, MPIJob) keep the
+// suspend flag, unlike the top-level spec.suspend that a plain resume patches.
+func ResumeRunPolicy() *recorder.Action {
+	return &recorder.Action{Type: recorder.ActionResume, Patch: []byte(`{"spec":{"runPolicy":{"suspend":false}}}`)}
+}

@@ -1,0 +1,242 @@
+events:
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v1
+    kind: PyTorchJob
+    metadata:
+      creationTimestamp: "2026-09-09T09:02:43Z"
+      generation: 1
+      name: karta-e2e-pytorch-resumed
+      namespace: test-f5v9f
+      uid: d9ceae5a-1f4c-4b28-a3fd-958f7440bbd6
+    spec:
+      pytorchReplicaSpecs:
+        Master:
+          replicas: 1
+          restartPolicy: Never
+          template:
+            spec:
+              containers:
+              - command:
+                - sh
+                - -c
+                - sleep infinity
+                image: busybox:1.36
+                name: pytorch
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runPolicy:
+        suspend: true
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is created.
+        reason: PyTorchJobCreated
+        status: "True"
+        type: Created
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is suspended.
+        reason: PyTorchJobSuspended
+        status: "True"
+        type: Suspended
+  phases:
+  - Initializing
+  - Suspended
+  resourceVersion: "238595"
+  state: Suspended
+- action:
+    name: Resume
+    operation:
+      patchType: application/merge-patch+json
+      payload:
+        spec:
+          runPolicy:
+            suspend: false
+      verb: PATCH
+  kind: ACTION
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v1
+    kind: PyTorchJob
+    metadata:
+      creationTimestamp: "2026-09-09T09:02:43Z"
+      generation: 2
+      name: karta-e2e-pytorch-resumed
+      namespace: test-f5v9f
+      uid: d9ceae5a-1f4c-4b28-a3fd-958f7440bbd6
+    spec:
+      pytorchReplicaSpecs:
+        Master:
+          replicas: 1
+          restartPolicy: Never
+          template:
+            spec:
+              containers:
+              - command:
+                - sh
+                - -c
+                - sleep infinity
+                image: busybox:1.36
+                name: pytorch
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runPolicy:
+        suspend: false
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is created.
+        reason: PyTorchJobCreated
+        status: "True"
+        type: Created
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is suspended.
+        reason: PyTorchJobSuspended
+        status: "True"
+        type: Suspended
+  phases:
+  - Initializing
+  - Suspended
+  resourceVersion: "238598"
+  state: Suspended
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v1
+    kind: PyTorchJob
+    metadata:
+      creationTimestamp: "2026-09-09T09:02:43Z"
+      generation: 2
+      name: karta-e2e-pytorch-resumed
+      namespace: test-f5v9f
+      uid: d9ceae5a-1f4c-4b28-a3fd-958f7440bbd6
+    spec:
+      pytorchReplicaSpecs:
+        Master:
+          replicas: 1
+          restartPolicy: Never
+          template:
+            spec:
+              containers:
+              - command:
+                - sh
+                - -c
+                - sleep infinity
+                image: busybox:1.36
+                name: pytorch
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runPolicy:
+        suspend: false
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is created.
+        reason: PyTorchJobCreated
+        status: "True"
+        type: Created
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is resumed.
+        reason: PyTorchJobResumed
+        status: "False"
+        type: Suspended
+      replicaStatuses:
+        Master:
+          selector: training.kubeflow.org/job-name=karta-e2e-pytorch-resumed,training.kubeflow.org/operator-name=pytorchjob-controller,training.kubeflow.org/replica-type=master
+      startTime: "2026-09-09T09:02:43Z"
+  phases:
+  - Initializing
+  resourceVersion: "238608"
+  state: Initializing
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v1
+    kind: PyTorchJob
+    metadata:
+      creationTimestamp: "2026-09-09T09:02:43Z"
+      generation: 2
+      name: karta-e2e-pytorch-resumed
+      namespace: test-f5v9f
+      uid: d9ceae5a-1f4c-4b28-a3fd-958f7440bbd6
+    spec:
+      pytorchReplicaSpecs:
+        Master:
+          replicas: 1
+          restartPolicy: Never
+          template:
+            spec:
+              containers:
+              - command:
+                - sh
+                - -c
+                - sleep infinity
+                image: busybox:1.36
+                name: pytorch
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runPolicy:
+        suspend: false
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is created.
+        reason: PyTorchJobCreated
+        status: "True"
+        type: Created
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is resumed.
+        reason: PyTorchJobResumed
+        status: "False"
+        type: Suspended
+      - lastTransitionTime: "2026-09-09T09:02:43Z"
+        lastUpdateTime: "2026-09-09T09:02:43Z"
+        message: PyTorchJob karta-e2e-pytorch-resumed is running.
+        reason: PyTorchJobRunning
+        status: "True"
+        type: Running
+      replicaStatuses:
+        Master:
+          active: 1
+          selector: training.kubeflow.org/job-name=karta-e2e-pytorch-resumed,training.kubeflow.org/operator-name=pytorchjob-controller,training.kubeflow.org/replica-type=master
+      startTime: "2026-09-09T09:02:43Z"
+  phases:
+  - Initializing
+  - Running
+  resourceVersion: "238623"
+  state: Running
+flow: resumed
+kartaFile: docs/catalog/kubeflow-org-pytorchjob-v1.yaml
+kartaName: kubeflow-org-pytorchjob-v1
+operator: kubeflow
+result:
+  succeeded: true
+schemaVersion: 1
+summary:
+- amount: 2
+  phases:
+  - Initializing
+  - Suspended
+- amount: 1
+  phases:
+  - Initializing
+- amount: 1
+  phases:
+  - Initializing
+  - Running
+version: v1.34.0
+want: Running
