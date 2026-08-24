@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# An MPIJob whose launcher sleeps for 5 minutes, so the mpi-operator holds it in the Running condition
+# long enough to record before it would finish. cleanPodPolicy None keeps the worker pod for extraction.
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: karta-e2e-mpi-running
+  namespace: default
+spec:
+  slotsPerWorker: 1
+  runPolicy:
+    cleanPodPolicy: None
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: mpi-launcher
+              image: busybox:1.36
+              command: ["sh", "-c", "sleep 300"]
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+    Worker:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: mpi-worker
+              image: busybox:1.36
+              command: ["sleep", "infinity"]
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
