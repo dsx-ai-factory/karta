@@ -372,16 +372,3 @@ func RayJobInitializing() recorder.StateCheck {
 		return ds == "Initializing"
 	}
 }
-
-// RayInitializing matches a RayCluster converging toward ready: not suspended and status.state not yet
-// "ready" or "failed". Covers a fresh provision (state empty) and the resume window where suspend is
-// already false but state still lags at "suspended".
-func RayInitializing() recorder.StateCheck {
-	return func(u *unstructured.Unstructured) bool {
-		if suspend, _, _ := unstructured.NestedBool(u.Object, "spec", "suspend"); suspend {
-			return false
-		}
-		state, _, _ := unstructured.NestedString(u.Object, "status", "state")
-		return state != "ready" && state != "failed"
-	}
-}
