@@ -71,21 +71,6 @@ func CondStatus(condType, status string) recorder.StateCheck {
 	}
 }
 
-// CondPending matches when condType is not yet decided: absent, or present with a status other than True
-// or False (typically Unknown while the workload reconciles). Separates "still deploying" from ready or
-// failed, including the early window before the condition is written at all.
-func CondPending(condType string) recorder.StateCheck {
-	return func(u *unstructured.Unstructured) bool {
-		conds, _, _ := unstructured.NestedSlice(u.Object, "status", "conditions")
-		for _, c := range conds {
-			if m, ok := c.(map[string]any); ok && m["type"] == condType {
-				return m["status"] != "True" && m["status"] != "False"
-			}
-		}
-		return true // absent = pending
-	}
-}
-
 // CondNotTrue matches when no condition of condType is present with status True (absent or non-True). A
 // just-created Deployment is Progressing with no Available condition yet, still initializing.
 func CondNotTrue(condType string) recorder.StateCheck {
