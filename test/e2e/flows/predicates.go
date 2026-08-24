@@ -141,21 +141,6 @@ func PhaseAny(wants []string, path ...string) recorder.StateCheck {
 	}
 }
 
-// PhaseNot matches when the string at the path (empty if absent) is none of unwanted. Useful for a
-// catch-all Initializing that tolerates every intermediate operator phase, keying only off the terminal
-// ones (for example any NIMService state that is not Ready or Failed).
-func PhaseNot(unwanted []string, path ...string) recorder.StateCheck {
-	return func(u *unstructured.Unstructured) bool {
-		got, _, _ := unstructured.NestedString(u.Object, path...)
-		for _, w := range unwanted {
-			if got == w {
-				return false
-			}
-		}
-		return true
-	}
-}
-
 func IntAtLeast(n int64, path ...string) recorder.StateCheck {
 	return func(u *unstructured.Unstructured) bool {
 		got, found, err := unstructured.NestedInt64(u.Object, path...)
