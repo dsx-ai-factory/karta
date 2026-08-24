@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# A Grove PodCliqueSet the scaled flow drives 1 -> 2 -> 1 replicas (spec.replicas). Each replica is a
+# full worker clique; status.availableReplicas tracks how many are up. The definition reads Running
+# once availableReplicas >= spec.replicas. Karta reads Running at each settled count, extraction differs.
+apiVersion: grove.io/v1alpha1
+kind: PodCliqueSet
+metadata:
+  name: karta-e2e-grove-scaled
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    cliques:
+      - name: worker
+        spec:
+          roleName: worker
+          replicas: 2
+          podSpec:
+            containers:
+              - name: worker
+                image: busybox:1.36
+                command: ["/bin/sh", "-c", "echo karta-e2e-grove && sleep infinity"]
+                resources:
+                  requests:
+                    cpu: 20m
+                    memory: 32Mi

@@ -42,6 +42,7 @@ type ActionType string
 const (
 	ActionSuspend ActionType = "Suspend"
 	ActionResume  ActionType = "Resume"
+	ActionScale   ActionType = "Scale"
 )
 
 // Action is a merge-patch applied to the workload to drive a transition.

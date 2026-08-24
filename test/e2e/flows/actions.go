@@ -4,6 +4,8 @@
 package flows
 
 import (
+	"fmt"
+
 	"github.com/run-ai/karta/test/e2e/recorder"
 )
 
@@ -19,4 +21,10 @@ func Suspend() *recorder.Action {
 // suspend flag, unlike the top-level spec.suspend that a plain resume patches.
 func ResumeRunPolicy() *recorder.Action {
 	return &recorder.Action{Type: recorder.ActionResume, Patch: []byte(`{"spec":{"runPolicy":{"suspend":false}}}`)}
+}
+
+// ScaleReplicas sets spec.replicas, for any workload with a scalar replica count (Deployment,
+// StatefulSet, LeaderWorkerSet, Grove, ...).
+func ScaleReplicas(n int) *recorder.Action {
+	return &recorder.Action{Type: recorder.ActionScale, Patch: []byte(fmt.Sprintf(`{"spec":{"replicas":%d}}`, n))}
 }
