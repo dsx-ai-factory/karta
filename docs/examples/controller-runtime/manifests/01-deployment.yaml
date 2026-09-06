@@ -23,7 +23,10 @@ spec:
           # Temp validation image for the Brev Launchable PoC, pushed manually
           # to a personal ghcr namespace. Not the final published location.
           image: ghcr.io/lavianalon/karta-controller-poc:latest
-          imagePullPolicy: IfNotPresent
+          # Always, not IfNotPresent: the temp image is iterating on a :latest
+          # tag while validating the Brev Launchable, so a stale local cache
+          # must not shadow a newer push.
+          imagePullPolicy: Always
           # Workload types to manage, as group/version/kind (core group empty).
           # Add a type here, apply its Karta object, and grant RBAC below.
           args:
