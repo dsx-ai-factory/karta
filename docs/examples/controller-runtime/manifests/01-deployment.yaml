@@ -20,8 +20,9 @@ spec:
       serviceAccountName: generic-controller
       containers:
         - name: controller
-          # Built and side-loaded with `kind load docker-image` (see README).
-          image: generic-controller-example:latest
+          # Temp validation image for the Brev Launchable PoC, pushed manually
+          # to a personal ghcr namespace. Not the final published location.
+          image: ghcr.io/lavianalon/karta-controller-poc:latest
           imagePullPolicy: IfNotPresent
           # Workload types to manage, as group/version/kind (core group empty).
           # Add a type here, apply its Karta object, and grant RBAC below.
