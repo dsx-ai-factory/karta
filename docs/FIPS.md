@@ -64,13 +64,16 @@ for it today. The `GODEBUG` value is hardcoded from `fipsMode`, and
 
 The `crd-upgrader` Job is a separate case. Its default image
 (`crdUpgrader.image`, `registry.k8s.io/kubectl`) is a stock `kubectl` build,
-not built with `GOFIPS140`. Setting `GODEBUG=fips140=only` on it does not
-make `crd-upgrader` FIPS 140-3 compliant: without the certified module
-linked in, the binary has nothing to enforce. What it does do is turn on
-the same restricted-algorithm behavior that broke a real `kubectl` build in
-testing. Whether a given `kubectl` build hits that failure depends on which
-Go toolchain version built it. Because that risk could not be ruled out for
-any given build, `crd-upgrader` always sets
-`GODEBUG=fips140=only,tlsmlkem=0` (not just `fips140=only`) when `fipsMode`
-is `only`. Treat `crd-upgrader` under `fipsMode=only` as "does not crash",
-not as "FIPS 140-3 compliant".
+not built with `GOFIPS140`. `GODEBUG=fips140=only` still restricts that
+binary to approved algorithms at runtime, but without the CMVP-certified
+module backing the restriction, that is not the same as a FIPS 140-3
+validated crypto implementation. Whether a given `kubectl` build's TLS
+handshake trips the restriction depends on which Go toolchain version built
+it: testing found one build that failed during OpenAPI schema validation,
+which `tlsmlkem=0` fixed. Because that risk could not be ruled out for any
+given build, `crd-upgrader` always sets `GODEBUG=fips140=only,tlsmlkem=0`
+(not just `fips140=only`) when `fipsMode` is `only`.
+
+No FIPS-built `kubectl` image is published upstream today. If `crd-upgrader`
+needs to run a CMVP-certified module for your compliance requirements,
+supply your own FIPS-built image via `crdUpgrader.image`.
