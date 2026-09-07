@@ -16,10 +16,13 @@ There is no separate `-fips` image variant.
 fipsMode: "off"
 ```
 
-`fipsMode` sets `GODEBUG=fips140=<mode>` on the operator container. Valid
-values:
+`fipsMode` sets `GODEBUG=fips140=<mode>` on the operator container and on the
+`crd-upgrader` pre-install/pre-upgrade hook Job. This is a runtime switch, not
+a build-time one: `GOFIPS140=v1.0.0` always links the FIPS module into the
+operator image, regardless of `fipsMode`. Valid values:
 
-- `off` (default) - the FIPS module is not used.
+- `off` (default) - FIPS mode disabled at runtime; the module is present in
+  the binary but not engaged, and no self-tests run.
 - `on` - the FIPS module is used and runs its startup self-tests, but
   non-approved algorithms are still allowed (advisory mode).
 - `only` - non-approved algorithms are rejected. See below before using this
@@ -30,16 +33,18 @@ helm upgrade --install karta oci://ghcr.io/run-ai/karta/karta \
   -n karta-system --create-namespace --set fipsMode=only
 ```
 
-## `only` mode can panic at runtime
+## `only` mode is a testing aid, not a production mode
 
-With `fips140=only`, the Go FIPS 140-3 module refuses any non-approved
-cryptographic algorithm at the call site as a panic, not a graceful error, per
-the [`GODEBUG=fips140` option
-docs](https://go.dev/doc/security/fips140#the-fips140-godebug-option). If any
-code path in the operator's dependency tree (including transitive TLS/crypto
-usage) reaches a non-approved algorithm, the pod crashes instead of degrading.
-Using `only` is the caller's responsibility: test it against your cluster's
-actual configuration before relying on it in production.
+Per the [`GODEBUG=fips140` option
+docs](https://go.dev/doc/security/fips140#the-fips140-godebug-option),
+`fips140=only` is a best-effort diagnostic for testing, assessment, and
+debugging. Upstream Go explicitly does not recommend it for production. When a
+non-approved cryptographic algorithm is used, the Go FIPS 140-3 module can
+return an error or panic at the call site, depending on the code path; a
+panic crashes the pod instead of degrading gracefully. Using `only` is the
+caller's responsibility: test it against your cluster's actual configuration
+before relying on it, and do not treat it as a substitute for `on` in
+production.
 
 The operator's own crypto usage was tested under `fips140=only` against a real
 cluster: client-go's TLS connection to the API server, and the webhook's
@@ -51,15 +56,16 @@ implementation calls a non-approved plain X25519 primitive internally (see
 [golang/go#78298](https://github.com/golang/go/issues/78298) and
 [kubernetes/kubernetes#133743](https://github.com/kubernetes/kubernetes/issues/133743)).
 If a future Kubernetes or Go version changes that negotiation and the
-operator starts failing outbound TLS handshakes under `fips140=only`, set
-`GODEBUG=fips140=only,tlsmlkem=0` via `extraArgs` or a values override.
+operator starts failing outbound TLS handshakes under `fips140=only`, the
+chart's `deployment.yaml` needs updating to also set `tlsmlkem=0` on the
+operator container: there is no values-based override for it today (the
+`GODEBUG` value is hardcoded from `fipsMode`, and `extraArgs` only appends
+container arguments, not environment variables).
 
-## Testing locally
-
-```sh
-make e2e-up FIPS_MODE=only
-```
-
-Provisions the full e2e cluster (kind, cert-manager, fake-gpu-operator, all
-workload operators) with the Karta operator running under
-`GODEBUG=fips140=only`. See [`hack/e2e/README.md`](../hack/e2e/README.md).
+The `crd-upgrader` Job is a separate case: its default image
+(`crdUpgrader.image`, `registry.k8s.io/kubectl`) is a stock `kubectl` build,
+and whether its `kubectl apply --server-side` call trips the same
+`X25519`-under-FIPS failure depends on which Go toolchain version built that
+particular `kubectl` binary. Because that risk could not be ruled out for any
+given build, `crd-upgrader` always sets `GODEBUG=fips140=only,tlsmlkem=0`
+(not just `fips140=only`) when `fipsMode` is `only`.

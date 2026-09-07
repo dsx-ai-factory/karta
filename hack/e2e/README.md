@@ -31,7 +31,6 @@ hack/e2e/
 make e2e-up                          # base + all operators
 make e2e-up WORKLOADS="jobset lws"   # base + a subset (one provision, deps resolved once)
 make e2e-up WORKLOADS="jobset"       # base + a single operator
-make e2e-up FIPS_MODE=on             # base + all operators, Karta operator run with GODEBUG=fips140=on
 make e2e-down                        # tear down
 ./hack/e2e/up.sh --list dynamo       # print the resolved plan and exit (dynamo pulls grove)
 ```

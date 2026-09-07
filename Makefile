@@ -226,12 +226,13 @@ operator-image-push: ## Push the operator image
 	$(CONTAINER_TOOL) push $(IMAGE)
 
 .PHONY: operator-image-buildx-push
-operator-image-buildx-push: ## Build and push a multi-arch operator image via BuildKit (requires Docker)
+operator-image-buildx-push: ## Build and push a multi-arch operator image with an SBOM attestation via BuildKit (requires Docker)
 	@[ "$(CONTAINER_TOOL)" = "docker" ] || { echo "Error: operator-image-buildx-push requires CONTAINER_TOOL=docker (got '$(CONTAINER_TOOL)')" >&2; exit 1; }
 	$(CONTAINER_TOOL) buildx build $(BUILD_ARGS) \
 		--platform $(PLATFORMS_CSV) \
 		--build-arg GO_LDFLAGS="$(GO_LDFLAGS)" \
 		--tag $(IMAGE) \
+		--attest type=sbom \
 		-f operator/Dockerfile \
 		--push \
 		.
@@ -386,8 +387,8 @@ test-replay: ## Replay the recorded fixtures through Karta offline (no cluster)
 #   make e2e-up                          # everything
 #   make e2e-up WORKLOADS="jobset lws"   # a subset - one provision, deps resolved once
 .PHONY: e2e-up
-e2e-up: ## Provision a kind cluster + operators (WORKLOADS="jobset kuberay" for a subset, or "all"; CLUSTER_NAME=<name> for an isolated parallel cluster; FIPS_MODE=off|on|only for the Karta operator's GODEBUG=fips140 mode)
-	CLUSTER_NAME=$(CLUSTER_NAME) FIPS_MODE=$(FIPS_MODE) ./hack/e2e/up.sh $(WORKLOADS)
+e2e-up: ## Provision a kind cluster + operators (WORKLOADS="jobset kuberay" for a subset, or "all"; CLUSTER_NAME=<name> for an isolated parallel cluster)
+	CLUSTER_NAME=$(CLUSTER_NAME) ./hack/e2e/up.sh $(WORKLOADS)
 
 .PHONY: e2e-down
 e2e-down: ## Tear down the e2e cluster (set CLUSTER_NAME for a named one)

@@ -20,11 +20,7 @@ ARG GO_LDFLAGS=""
 WORKDIR /src
 COPY . .
 WORKDIR /src/operator
-# GOFIPS140 links the Go toolchain's CMVP-validated FIPS 140-3 crypto module into
-# the binary. It is pinned (not "latest") because the module version is itself
-# the certified unit; bumping it is a deliberate, tracked upgrade. The module is
-# always linked in; charts/karta/values.yaml's fipsMode sets GODEBUG=fips140 at
-# runtime to actually enable/enforce it, see docs/FIPS.md.
+# See docs/FIPS.md for FIPS 140-3 support.
 RUN CGO_ENABLED=0 GO111MODULE=on GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOFIPS140=v1.0.0 \
 	go build -trimpath \
 	-ldflags "${GO_LDFLAGS}" \

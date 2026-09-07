@@ -30,11 +30,6 @@ fi
 # they need so they inherit it (version pins come from global.env via _common.sh).
 export CLUSTER_NAME IMAGE REPO_ROOT
 
-case "${FIPS_MODE}" in
-  off | on | only) ;;
-  *) echo "error: FIPS_MODE must be one of: off, on, only (got \"${FIPS_MODE}\")" >&2; exit 2 ;;
-esac
-
 # Workload operators selectable on the command line, in canonical install order:
 # a dependency always appears before its dependents (knative before kserve,
 # grove before dynamo).
@@ -72,9 +67,6 @@ Usage: $0 [--list] [workload...]
   plus only those workload operators (and their dependencies).
   Workloads: ${ALL_WORKLOADS[*]}
   --list    print the resolved install plan and exit
-
-  FIPS_MODE=off|on|only (default off) sets the Karta operator's GODEBUG=fips140
-  mode, e.g. FIPS_MODE=on $0. See docs/FIPS.md before using "only".
 EOF
 }
 
@@ -139,8 +131,7 @@ install_karta() {
   kubectl apply --server-side -f "${REPO_ROOT}/charts/karta/crds/"
   helm upgrade -i karta "${REPO_ROOT}/charts/karta" -n karta-system --create-namespace \
     --set image.repository="${IMAGE%:*}" --set image.tag="${IMAGE##*:}" \
-    --set resources.limits.memory="${KARTA_OPERATOR_MEMORY}" \
-    --set fipsMode="${FIPS_MODE}" >/dev/null
+    --set resources.limits.memory="${KARTA_OPERATOR_MEMORY}" >/dev/null
   rollout_wait karta-system deploy/karta-operator 120s
 }
 
@@ -232,7 +223,7 @@ main() {
   done
 
   if [ "$plan_only" = true ]; then
-    echo "base: kind cluster, cert-manager, fake-gpu-operator, karta (fipsMode=${FIPS_MODE})"
+    echo "base: kind cluster, cert-manager, fake-gpu-operator, karta"
     if [ "${#plan[@]}" -gt 0 ]; then echo "workloads: ${plan[*]}"; else echo "workloads: (none)"; fi
     exit 0
   fi

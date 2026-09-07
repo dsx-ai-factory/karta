@@ -41,6 +41,8 @@ spec:
           env:
             - name: KUBECACHEDIR
               value: /tmp/kube-cache
+            - name: GODEBUG
+              value: {{ if eq .Values.fipsMode "only" }}"fips140=only,tlsmlkem=0"{{ else }}"fips140={{ .Values.fipsMode }}"{{ end }}
           volumeMounts:
             - name: crds
               mountPath: /crds
