@@ -2,6 +2,9 @@
 {{- if and (gt (int .Values.replicaCount) 1) (not .Values.leaderElection.enabled) -}}
   {{- fail "replicaCount > 1 requires leaderElection.enabled=true; without leader election multiple replicas reconcile concurrently" -}}
 {{- end -}}
+{{- if not (has .Values.fipsMode (list "off" "on" "only")) -}}
+  {{- fail (printf "fipsMode must be one of: off, on, only (got %q)" .Values.fipsMode) -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,6 +37,9 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: GODEBUG
+              value: "fips140={{ .Values.fipsMode }}"
           args:
             {{- if .Values.leaderElection.enabled }}
             - --leader-elect
