@@ -37,9 +37,11 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if ne .Values.fipsMode "off" }}
           env:
             - name: GODEBUG
               value: "fips140={{ .Values.fipsMode }}"
+          {{- end }}
           args:
             {{- if .Values.leaderElection.enabled }}
             - --leader-elect

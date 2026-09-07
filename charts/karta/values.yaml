@@ -25,16 +25,7 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
-# Go FIPS 140-3 runtime mode (GODEBUG=fips140=<mode>) on the operator
-# container and the crd-upgrader hook Job. The operator image always has the
-# FIPS 140-3 crypto module built in (GOFIPS140 is pinned at build time); this
-# only controls runtime enforcement.
-#   off:  FIPS module not used (default).
-#   on:   FIPS module used, non-approved algorithms still allowed (advisory).
-#   only: non-approved algorithms are rejected. This can panic the operator or
-#     crd-upgrader at runtime if any code path reaches a non-FIPS-approved
-#     algorithm; also sets GODEBUG=tlsmlkem=0 on crd-upgrader, see
-#     docs/FIPS.md before using this in production.
+# Go FIPS 140-3 runtime mode: off, on, or only. See docs/FIPS.md.
 fipsMode: "off"
 
 # Image pull secrets for private registries.
