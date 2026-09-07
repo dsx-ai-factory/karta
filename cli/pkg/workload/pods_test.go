@@ -66,12 +66,16 @@ func controllerOf(gvk schema.GroupVersionKind, name string, uid types.UID) *meta
 	}
 }
 
-func pod(name string, owner *metav1.OwnerReference) corev1.Pod {
-	p := corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
-	if owner != nil {
-		p.OwnerReferences = []metav1.OwnerReference{*owner}
-	}
-	return p
+func pod(name string, owner *metav1.OwnerReference) unstructured.Unstructured {
+	return *owned(podGVK, name, "", owner)
+}
+
+// filter runs the attributor and fails the spec if a matched pod cannot decode.
+func filter(a *PodAttributor, pods []unstructured.Unstructured, rootUID types.UID) []corev1.Pod {
+	GinkgoHelper()
+	matched, err := a.Filter(context.Background(), pods, rootUID)
+	Expect(err).NotTo(HaveOccurred())
+	return matched
 }
 
 // fakeCluster serves objects through a dynamic client whose mapper knows the
@@ -96,13 +100,11 @@ var _ = Describe("PodAttributor", func() {
 	const rootUID = types.UID("root-uid")
 
 	var (
-		ctx        context.Context
 		deployment *unstructured.Unstructured
 		replicaSet *unstructured.Unstructured
 	)
 
 	BeforeEach(func() {
-		ctx = context.Background()
 		deployment = owned(deploymentGVK, "web", rootUID, nil)
 		replicaSet = owned(replicaSetGVK, "web-abc", "rs-uid", controllerOf(deploymentGVK, "web", rootUID))
 	})
@@ -111,7 +113,7 @@ var _ = Describe("PodAttributor", func() {
 		dyn, mapper := fakeCluster(deployment, replicaSet)
 
 		mine := pod("web-abc-1", controllerOf(replicaSetGVK, "web-abc", "rs-uid"))
-		matched := NewPodAttributor(dyn, mapper).Filter(ctx, []corev1.Pod{mine}, rootUID)
+		matched := filter(NewPodAttributor(dyn, mapper), []unstructured.Unstructured{mine}, rootUID)
 
 		Expect(matched).To(HaveLen(1))
 		Expect(matched[0].Name).To(Equal("web-abc-1"))
@@ -121,7 +123,7 @@ var _ = Describe("PodAttributor", func() {
 		dyn, mapper := fakeCluster()
 
 		mine := pod("standalone", controllerOf(deploymentGVK, "web", rootUID))
-		Expect(NewPodAttributor(dyn, mapper).Filter(ctx, []corev1.Pod{mine}, rootUID)).To(HaveLen(1))
+		Expect(filter(NewPodAttributor(dyn, mapper), []unstructured.Unstructured{mine}, rootUID)).To(HaveLen(1))
 	})
 
 	It("leaves a pod belonging to another workload of the same type", func() {
@@ -131,13 +133,13 @@ var _ = Describe("PodAttributor", func() {
 			owned(deploymentGVK, "api", "other-root", nil))
 
 		theirs := pod("api-xyz-1", controllerOf(replicaSetGVK, "api-xyz", "other-rs"))
-		Expect(NewPodAttributor(dyn, mapper).Filter(ctx, []corev1.Pod{theirs}, rootUID)).To(BeEmpty())
+		Expect(filter(NewPodAttributor(dyn, mapper), []unstructured.Unstructured{theirs}, rootUID)).To(BeEmpty())
 	})
 
 	It("leaves an unowned pod", func() {
 		dyn, mapper := fakeCluster(deployment, replicaSet)
 
-		Expect(NewPodAttributor(dyn, mapper).Filter(ctx, []corev1.Pod{pod("bare", nil)}, rootUID)).To(BeEmpty())
+		Expect(filter(NewPodAttributor(dyn, mapper), []unstructured.Unstructured{pod("bare", nil)}, rootUID)).To(BeEmpty())
 	})
 
 	// A missing intermediate is a chain that cannot be walked, not a match.
@@ -145,7 +147,7 @@ var _ = Describe("PodAttributor", func() {
 		dyn, mapper := fakeCluster(deployment)
 
 		orphan := pod("web-abc-1", controllerOf(replicaSetGVK, "web-abc", "rs-uid"))
-		Expect(NewPodAttributor(dyn, mapper).Filter(ctx, []corev1.Pod{orphan}, rootUID)).To(BeEmpty())
+		Expect(filter(NewPodAttributor(dyn, mapper), []unstructured.Unstructured{orphan}, rootUID)).To(BeEmpty())
 	})
 
 	// Sibling pods share an intermediate, and a broken chain must not be
@@ -160,7 +162,7 @@ var _ = Describe("PodAttributor", func() {
 				return false, nil, nil
 			})
 
-		pods := []corev1.Pod{
+		pods := []unstructured.Unstructured{
 			pod("web-abc-1", controllerOf(replicaSetGVK, "web-abc", "rs-uid")),
 			pod("web-abc-2", controllerOf(replicaSetGVK, "web-abc", "rs-uid")),
 			pod("gone-1", controllerOf(replicaSetGVK, "gone", "gone-uid")),
@@ -168,7 +170,7 @@ var _ = Describe("PodAttributor", func() {
 		}
 		attributor := NewPodAttributor(dyn, mapper)
 
-		Expect(attributor.Filter(ctx, pods, rootUID)).To(HaveLen(2))
+		Expect(filter(attributor, pods, rootUID)).To(HaveLen(2))
 		Expect(gets).To(Equal(2), "one fetch for the shared ReplicaSet, one for the missing one")
 	})
 
@@ -178,7 +180,7 @@ var _ = Describe("PodAttributor", func() {
 		dyn, mapper := fakeCluster(deployment, gateway)
 
 		mine := pod("web-1", controllerOf(clusterOwnerGVK, "gateway", "gateway-uid"))
-		Expect(NewPodAttributor(dyn, mapper).Filter(ctx, []corev1.Pod{mine}, rootUID)).To(HaveLen(1))
+		Expect(filter(NewPodAttributor(dyn, mapper), []unstructured.Unstructured{mine}, rootUID)).To(HaveLen(1))
 	})
 
 	// Malformed data can point an owner chain at itself; the walk must end.
@@ -187,12 +189,14 @@ var _ = Describe("PodAttributor", func() {
 		dyn, mapper := fakeCluster(loop)
 
 		caught := pod("loop-1", controllerOf(replicaSetGVK, "loop", "loop-uid"))
-		Expect(NewPodAttributor(dyn, mapper).Filter(ctx, []corev1.Pod{caught}, rootUID)).To(BeEmpty())
+		Expect(filter(NewPodAttributor(dyn, mapper), []unstructured.Unstructured{caught}, rootUID)).To(BeEmpty())
 	})
 })
 
 var _ = Describe("ListPods", func() {
-	It("decodes every pod in the namespace into the typed shape", func() {
+	// Undecoded, but whole: Filter decodes the matches, so anything the view
+	// reads later has to survive the round trip.
+	It("returns every pod in the namespace, decodable in full", func() {
 		running := owned(podGVK, "web-abc-1", "pod-uid", nil)
 		Expect(unstructured.SetNestedField(running.Object, "node-01", "spec", "nodeName")).To(Succeed())
 		dyn, _ := fakeCluster(running)
@@ -200,7 +204,10 @@ var _ = Describe("ListPods", func() {
 		pods, err := ListPods(context.Background(), dyn, namespace)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(pods).To(HaveLen(1))
-		Expect(pods[0].Name).To(Equal("web-abc-1"))
-		Expect(pods[0].Spec.NodeName).To(Equal("node-01"))
+
+		var pod corev1.Pod
+		Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(pods[0].Object, &pod)).To(Succeed())
+		Expect(pod.Name).To(Equal("web-abc-1"))
+		Expect(pod.Spec.NodeName).To(Equal("node-01"))
 	})
 })

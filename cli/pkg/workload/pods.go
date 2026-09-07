@@ -42,16 +42,24 @@ func NewPodAttributor(dyn dynamic.Interface, mapper meta.RESTMapper) *PodAttribu
 	return &PodAttributor{dyn: dyn, mapper: mapper, cache: map[ownerKey]*unstructured.Unstructured{}}
 }
 
-// Filter returns the pods whose owner-reference chain reaches rootUID. pods
-// may span namespaces, as in a cluster-wide search.
-func (a *PodAttributor) Filter(ctx context.Context, pods []corev1.Pod, rootUID types.UID) []corev1.Pod {
+// Filter returns the pods whose owner-reference chain reaches rootUID, decoding
+// only the matches. pods may span namespaces, as in a cluster-wide search.
+func (a *PodAttributor) Filter(
+	ctx context.Context, pods []unstructured.Unstructured, rootUID types.UID,
+) ([]corev1.Pod, error) {
 	var matched []corev1.Pod
 	for i := range pods {
-		if a.belongsTo(ctx, pods[i].OwnerReferences, pods[i].Namespace, rootUID, 0) {
-			matched = append(matched, pods[i])
+		if !a.belongsTo(ctx, pods[i].GetOwnerReferences(), pods[i].GetNamespace(), rootUID, 0) {
+			continue
 		}
+
+		var pod corev1.Pod
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(pods[i].Object, &pod); err != nil {
+			return nil, fmt.Errorf("decode pod %s: %w", pods[i].GetName(), err)
+		}
+		matched = append(matched, pod)
 	}
-	return matched
+	return matched, nil
 }
 
 // belongsTo reports whether any owner in refs is, or transitively leads to,
@@ -125,20 +133,12 @@ func (a *PodAttributor) get(
 	return obj, nil
 }
 
-// ListPods reads every pod in namespace once, decoded to the typed shape the
-// attributor and the view both need. An empty namespace lists cluster-wide.
-func ListPods(ctx context.Context, dyn dynamic.Interface, namespace string) ([]corev1.Pod, error) {
+// ListPods reads every pod in namespace once, left undecoded for Filter to
+// narrow. An empty namespace lists cluster-wide.
+func ListPods(ctx context.Context, dyn dynamic.Interface, namespace string) ([]unstructured.Unstructured, error) {
 	list, err := dyn.Resource(podsGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	pods := make([]corev1.Pod, 0, len(list.Items))
-	for i := range list.Items {
-		var pod corev1.Pod
-		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(list.Items[i].Object, &pod); err != nil {
-			return nil, fmt.Errorf("decode pod %s: %w", list.Items[i].GetName(), err)
-		}
-		pods = append(pods, pod)
-	}
-	return pods, nil
+	return list.Items, nil
 }
