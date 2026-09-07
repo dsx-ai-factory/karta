@@ -55,17 +55,22 @@ some other Go services need under `fips140=only` because the curve's
 implementation calls a non-approved plain X25519 primitive internally (see
 [golang/go#78298](https://github.com/golang/go/issues/78298) and
 [kubernetes/kubernetes#133743](https://github.com/kubernetes/kubernetes/issues/133743)).
-If a future Kubernetes or Go version changes that negotiation and the
+A future Kubernetes or Go version could change that negotiation. If the
 operator starts failing outbound TLS handshakes under `fips140=only`, the
-chart's `deployment.yaml` needs updating to also set `tlsmlkem=0` on the
-operator container: there is no values-based override for it today (the
-`GODEBUG` value is hardcoded from `fipsMode`, and `extraArgs` only appends
-container arguments, not environment variables).
+fix is to also set `tlsmlkem=0` on the operator container. That requires
+updating the chart's `deployment.yaml`. There is no values-based override
+for it today. The `GODEBUG` value is hardcoded from `fipsMode`, and
+`extraArgs` only appends container arguments, not environment variables.
 
-The `crd-upgrader` Job is a separate case: its default image
+The `crd-upgrader` Job is a separate case. Its default image
 (`crdUpgrader.image`, `registry.k8s.io/kubectl`) is a stock `kubectl` build,
-and whether its `kubectl apply --server-side` call trips the same
-`X25519`-under-FIPS failure depends on which Go toolchain version built that
-particular `kubectl` binary. Because that risk could not be ruled out for any
-given build, `crd-upgrader` always sets `GODEBUG=fips140=only,tlsmlkem=0`
-(not just `fips140=only`) when `fipsMode` is `only`.
+not built with `GOFIPS140`. Setting `GODEBUG=fips140=only` on it does not
+make `crd-upgrader` FIPS 140-3 compliant: without the certified module
+linked in, the binary has nothing to enforce. What it does do is turn on
+the same restricted-algorithm behavior that broke a real `kubectl` build in
+testing. Whether a given `kubectl` build hits that failure depends on which
+Go toolchain version built it. Because that risk could not be ruled out for
+any given build, `crd-upgrader` always sets
+`GODEBUG=fips140=only,tlsmlkem=0` (not just `fips140=only`) when `fipsMode`
+is `only`. Treat `crd-upgrader` under `fipsMode=only` as "does not crash",
+not as "FIPS 140-3 compliant".
