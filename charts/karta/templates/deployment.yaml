@@ -1,9 +1,7 @@
+{{- include "karta.validateFipsMode" . -}}
 {{- if .Values.operator.enabled -}}
 {{- if and (gt (int .Values.replicaCount) 1) (not .Values.leaderElection.enabled) -}}
   {{- fail "replicaCount > 1 requires leaderElection.enabled=true; without leader election multiple replicas reconcile concurrently" -}}
-{{- end -}}
-{{- if not (has .Values.fipsMode (list "off" "on" "only")) -}}
-  {{- fail (printf "fipsMode must be one of: off, on, only (got %q)" .Values.fipsMode) -}}
 {{- end -}}
 apiVersion: apps/v1
 kind: Deployment

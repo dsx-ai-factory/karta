@@ -69,3 +69,16 @@ must match the --webhook-service-name flag passed to the operator.
 {{- define "karta.webhook.validatingConfigName" -}}
 {{- printf "%s-validating" (include "karta.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/*
+Validates fipsMode. Included from both deployment.yaml and crd-upgrader-job.yaml,
+since deployment.yaml renders nothing when operator.enabled=false (CRD-only
+install) and crd-upgrader-job.yaml reads fipsMode independently of that flag.
+%v, not %q: an unquoted on/off/yes/no/true/false in values.yaml parses as a YAML
+1.1 boolean, and %q on a non-string prints "%!q(bool=true)" instead of the value.
+*/}}
+{{- define "karta.validateFipsMode" -}}
+{{- if not (has .Values.fipsMode (list "off" "on" "only")) -}}
+  {{- fail (printf "fipsMode must be a quoted string, one of: off, on, only (got %v)" .Values.fipsMode) -}}
+{{- end -}}
+{{- end -}}
