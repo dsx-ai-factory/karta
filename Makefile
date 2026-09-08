@@ -19,6 +19,7 @@ PRIMARY_COMPONENTS := lib cli operator
 
 KARTA_CHART_DIR := $(PROJECT_DIR)/charts/karta
 KARTA_CRDS_DIR := $(KARTA_CHART_DIR)/crds
+
 HELM_CHART_VERSION ?= 0.0.1
 
 # Tool versions. Override on the command line, e.g.
