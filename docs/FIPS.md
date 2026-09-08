@@ -44,6 +44,3 @@ panic crashes the pod instead of degrading gracefully. Using `only` is the
 caller's responsibility: test it against your cluster's actual configuration
 before relying on it, and do not treat it as a substitute for `on` in
 production.
-
-The operator's own crypto usage was tested under `fips140=only` against a
-real cluster: client-go's TLS connection to the API server worked cleanly.
