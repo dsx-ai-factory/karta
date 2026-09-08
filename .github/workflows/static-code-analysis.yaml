@@ -82,8 +82,8 @@ jobs:
           # except that saas-configuration has no `main` — map it to `master`. Only the
           # dispatch `ref:` is mapped; the `ref` INPUT below stays the caller's own ref,
           # or the scan would analyse master and report against this branch.
-          ref: ${{ (needs.gate.outputs.ref == 'main' || needs.gate.outputs.ref == 'master') && 'master' || needs.gate.outputs.ref }}
-          token: ${{ secrets.GIT_HUB_TOKEN }}
+          ref: master
+          token: ${{ secrets.GIT_HUB_OSS }}
           inputs: |
             {
               "ref":         ${{ toJSON(needs.gate.outputs.ref) }},
