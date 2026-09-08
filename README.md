@@ -199,6 +199,7 @@ Karta was created at [Run:ai](https://run.ai) (NVIDIA) to power workload managem
 ## Documentation
 
 - [Technical Guide](docs/Technical%20Guide.md) - Full Karta spec, path syntax (jq), validation rules
+- [FIPS 140-3](docs/FIPS.md) - Running the operator with Go's FIPS 140-3 crypto module
 - [Karta definitions](docs/samples/) - Real-world Karta definitions for common workload types
 - [Runnable examples](docs/examples/) - Offline quickstart and an installable controller-runtime example
 - [API Reference](https://pkg.go.dev/github.com/run-ai/karta) - Go package documentation

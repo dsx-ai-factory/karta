@@ -113,12 +113,13 @@ docker-build: ## Build Docker image for the host arch
 		..
 
 .PHONY: docker-buildx-push
-docker-buildx-push: ## Build and push a multi-arch Docker image via BuildKit (requires Docker)
+docker-buildx-push: ## Build and push a multi-arch Docker image with an SBOM attestation via BuildKit (requires Docker)
 	@[ "$(CONTAINER_TOOL)" = "docker" ] || (echo "Error: docker-buildx-push requires CONTAINER_TOOL=docker (got '$(CONTAINER_TOOL)')" >&2; exit 1)
 	$(CONTAINER_TOOL) buildx build $(BUILD_ARGS) \
 		--platform $(PLATFORMS_CSV) \
 		--build-arg VERSION=$(VERSION) \
 		--tag $(IMAGE) \
+		--attest type=sbom \
 		-f Dockerfile \
 		--push \
 		..

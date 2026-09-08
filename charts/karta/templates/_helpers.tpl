@@ -41,3 +41,14 @@ Name of the ServiceAccount to use. When create=true the chart owns the name
 {{- required "serviceAccount.name is required when serviceAccount.create is false" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Validates fipsMode. %v, not %q: an unquoted on/off/yes/no/true/false in
+values.yaml parses as a YAML 1.1 boolean, and %q on a non-string prints
+"%!q(bool=true)" instead of the value.
+*/}}
+{{- define "karta.validateFipsMode" -}}
+{{- if not (has .Values.fipsMode (list "off" "on" "only")) -}}
+  {{- fail (printf "fipsMode must be a quoted string, one of: off, on, only (got %v)" .Values.fipsMode) -}}
+{{- end -}}
+{{- end -}}

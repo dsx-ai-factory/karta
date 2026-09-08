@@ -18,7 +18,8 @@ ARG VERSION=dev
 WORKDIR /src
 COPY . .
 WORKDIR /src/operator
-RUN CGO_ENABLED=0 GO111MODULE=on GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+# See docs/FIPS.md for FIPS 140-3 support.
+RUN CGO_ENABLED=0 GO111MODULE=on GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOFIPS140=v1.0.0 \
 	go build -trimpath \
 	-ldflags "-X github.com/run-ai/karta/operator/pkg/version.Version=${VERSION}" \
 	-o /karta-operator ./cmd
