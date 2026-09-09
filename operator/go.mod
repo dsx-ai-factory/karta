@@ -2,6 +2,8 @@ module github.com/run-ai/karta/operator
 
 go 1.26.3
 
+godebug fips140=off
+
 require (
 	github.com/go-logr/logr v1.4.4
 	github.com/onsi/ginkgo/v2 v2.32.1
