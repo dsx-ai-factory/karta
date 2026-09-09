@@ -63,12 +63,12 @@ func RayService() *v1alpha1.Karta {
 						Kind:     &v1alpha1.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"},
 						OwnerRef: ptr.To("rayservice"),
 						SpecDefinition: &v1alpha1.SpecDefinition{
-							PodTemplateSpecPath: ptr.To(".spec.rayClusterConfig.workerGroupSpecs[].template"),
+							PodTemplateSpecPath: ptr.To(".spec.rayClusterConfig.workerGroupSpecs[]?.template"),
 						},
 						ScaleDefinition: &v1alpha1.ScaleDefinition{
-							ReplicasPath: ptr.To(".spec.rayClusterConfig.workerGroupSpecs[].replicas // 1"),
+							ReplicasPath: ptr.To(".spec.rayClusterConfig.workerGroupSpecs[]? | (.replicas // 1)"),
 						},
-						InstanceIdPath: ptr.To(".spec.rayClusterConfig.workerGroupSpecs[].groupName"),
+						InstanceIdPath: ptr.To(".spec.rayClusterConfig.workerGroupSpecs[]?.groupName"),
 						PodSelector: &v1alpha1.PodSelector{
 							ComponentTypeSelector: &v1alpha1.ComponentTypeSelector{
 								KeyPath: `.metadata.labels["ray.io/node-type"]`,

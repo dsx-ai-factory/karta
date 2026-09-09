@@ -62,14 +62,14 @@ func Raycluster() *v1alpha1.Karta {
 						Kind:     &v1alpha1.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"},
 						OwnerRef: ptr.To("raycluster"),
 						SpecDefinition: &v1alpha1.SpecDefinition{
-							PodTemplateSpecPath: ptr.To(".spec.workerGroupSpecs[].template"),
+							PodTemplateSpecPath: ptr.To(".spec.workerGroupSpecs[]?.template"),
 						},
 						ScaleDefinition: &v1alpha1.ScaleDefinition{
-							ReplicasPath:    ptr.To(".spec.workerGroupSpecs[].replicas"),
-							MinReplicasPath: ptr.To(".spec.workerGroupSpecs[].minReplicas"),
-							MaxReplicasPath: ptr.To(".spec.workerGroupSpecs[].maxReplicas"),
+							ReplicasPath:    ptr.To(".spec.workerGroupSpecs[]?.replicas"),
+							MinReplicasPath: ptr.To(".spec.workerGroupSpecs[]?.minReplicas"),
+							MaxReplicasPath: ptr.To(".spec.workerGroupSpecs[]?.maxReplicas"),
 						},
-						InstanceIdPath: ptr.To(".spec.workerGroupSpecs[].groupName"),
+						InstanceIdPath: ptr.To(".spec.workerGroupSpecs[]?.groupName"),
 						PodSelector: &v1alpha1.PodSelector{
 							ComponentTypeSelector: &v1alpha1.ComponentTypeSelector{
 								KeyPath: `.metadata.labels["ray.io/node-type"]`,
