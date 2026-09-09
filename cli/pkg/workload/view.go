@@ -42,7 +42,13 @@ func Resolve(ctx context.Context, obj *unstructured.Unstructured, def definition
 		return nil, fmt.Errorf("build tree: %w", err)
 	}
 
-	return &View{
+	view := viewOf(obj, def, workloadTree)
+	return &view, nil
+}
+
+// viewOf reads the identity every rendering of a workload shares.
+func viewOf(obj *unstructured.Unstructured, def definitions.Definition, workloadTree *tree.WorkloadTree) View {
+	return View{
 		Name:       obj.GetName(),
 		Namespace:  obj.GetNamespace(),
 		Kind:       obj.GetKind(),
@@ -51,7 +57,7 @@ func Resolve(ctx context.Context, obj *unstructured.Unstructured, def definition
 		Definition: def.Karta.Name,
 		Origin:     string(def.Origin),
 		Phases:     phases(workloadTree),
-	}, nil
+	}
 }
 
 // phases folds "no status mapping" and "mapping matched nothing" into one value.

@@ -17,7 +17,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
+	"k8s.io/utils/ptr"
+
 	"github.com/run-ai/karta/cli/pkg/definitions"
+	"github.com/run-ai/karta/pkg/api/runai/v1alpha1"
 	"github.com/run-ai/karta/pkg/catalog"
 )
 
@@ -83,6 +86,20 @@ func unschedulablePod(name string, labels map[string]string) corev1.Pod {
 			Conditions: []corev1.PodCondition{{
 				Type: corev1.PodScheduled, Status: corev1.ConditionFalse, Reason: "Unschedulable",
 			}},
+		},
+	}
+}
+
+// completedPod is a pod that ran to completion: not ready, but not failing.
+func completedPod(name string, labels map[string]string) corev1.Pod {
+	return corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "ml-team", Labels: labels},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodSucceeded,
+			Conditions: []corev1.PodCondition{
+				{Type: corev1.PodScheduled, Status: corev1.ConditionTrue},
+				{Type: corev1.PodReady, Status: corev1.ConditionFalse, Reason: "PodCompleted"},
+			},
 		},
 	}
 }
@@ -243,6 +260,131 @@ spec:
 		Expect(view.Resources.GPUs).To(Equal(int64(34)))
 	})
 
+	// A root can carry a pod template and a selector at once, so the pods it
+	// claims are only the ones that selector accepts.
+	It("applies the root's own component-type selector to its pods", func() {
+		karta := kartaNamed("apps-deployment-v1")
+		karta.Spec.StructureDefinition.RootComponent.PodSelector = &v1alpha1.PodSelector{
+			ComponentTypeSelector: &v1alpha1.ComponentTypeSelector{
+				KeyPath: `.metadata.labels["role"]`,
+				Value:   ptr.To("serve"),
+			},
+		}
+
+		obj := &unstructured.Unstructured{}
+		Expect(yaml.Unmarshal([]byte(`
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: embed-svc, namespace: ml-team}
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers: [{name: server}]
+`), obj)).To(Succeed())
+
+		view, err := ResolveDescribe(context.Background(), obj,
+			definitions.Definition{Karta: karta, Origin: definitions.OriginCatalog},
+			[]corev1.Pod{
+				livePod("embed-svc-0", "node-01", map[string]string{"role": "serve"}, "1"),
+				livePod("embed-svc-sidecar", "node-02", map[string]string{"role": "proxy"}, "1"),
+			})
+		Expect(err).NotTo(HaveOccurred())
+
+		pods := view.Components[0].Pods
+		Expect(pods).To(HaveLen(1))
+		Expect(pods[0].Name).To(Equal("embed-svc-0"))
+	})
+
+	// Nothing else reports this component's scale, so dropping it loses a
+	// replica count the manifest states outright.
+	It("keeps a grouping component that declares its own scale", func() {
+		view := describeObject([]byte(`
+apiVersion: grove.io/v1alpha1
+kind: PodCliqueSet
+metadata:
+  name: serve
+  namespace: ml-team
+spec:
+  replicas: 1
+  template:
+    cliques:
+      - name: worker
+        spec:
+          replicas: 2
+          podSpec:
+            containers: [{name: main}]
+    podCliqueScalingGroups:
+      - name: sg
+        replicas: 3
+`))
+
+		group := componentNamed(view.Components, "scalinggroup")
+		Expect(group).NotTo(BeNil())
+		Expect(group.Replicas.Desired).To(Equal(int32(3)))
+	})
+
+	// A group's scale multiplies through to leader and worker, so counting it
+	// again on the group itself would report twice the workload.
+	It("does not count a grouping component's scale that already reached its children", func() {
+		group := componentNamed(describeFixture("leaderworkerset.yaml").Components, "group")
+
+		Expect(group.Replicas.Desired).To(Equal(int32(8)), "leader 2 plus worker 6, not plus the group's own 2")
+	})
+
+	// Succeeded leaves no status reason, so without the ready condition a
+	// finished pod is indistinguishable from one that is stuck.
+	It("explains a pod that ran to completion", func() {
+		view := describeFixture("pytorchjob.yaml",
+			completedPod("llama-finetune-master-0", masterLabels()))
+
+		pod := componentNamed(view.Components, "master").Pods[0]
+		Expect(pod.Phase).To(Equal("Succeeded"))
+		Expect(pod.Reason).To(Equal("PodCompleted"))
+	})
+
+	// Milvus names 18 pod-bearing components and gives only 12 a selector. Left
+	// unchecked the other six each claim the whole workload, so one pod reports
+	// under seven components and ready counts exceed desired.
+	It("does not let a selectorless component claim a sibling's pods", func() {
+		view := describeObject([]byte(`
+apiVersion: milvus.io/v1beta1
+kind: Milvus
+metadata:
+  name: vectors
+  namespace: ml-team
+spec:
+  components:
+    proxy:
+      replicas: 1
+`), milvusPod("vectors-proxy-0", "proxy"))
+
+		Expect(componentNamed(view.Components, "proxy").Pods).To(HaveLen(1))
+		for _, name := range []string{"etcd", "minio", "pulsar-broker"} {
+			Expect(componentNamed(view.Components, name).Pods).To(BeEmpty(), name+" has no selector and owns no pod")
+		}
+	})
+
+	// With one pod-bearing component there is nothing to confuse a pod with, so
+	// a definition that names no selector still attributes its pods.
+	It("lets the only pod-bearing component claim pods without a selector", func() {
+		view := describeObject([]byte(`
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embed-svc
+  namespace: ml-team
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: server
+`), livePod("embed-svc-0", "node-01", nil, "0"))
+
+		Expect(view.Components[0].Pods).To(HaveLen(1))
+	})
+
 	It("sums cpu as millicores and memory as bytes", func() {
 		view := describeObject([]byte(`
 apiVersion: apps/v1
@@ -268,7 +410,7 @@ spec:
 })
 
 // describeObject resolves an inline manifest through the built-in catalog.
-func describeObject(manifest []byte) *DescribeView {
+func describeObject(manifest []byte, pods ...corev1.Pod) *DescribeView {
 	GinkgoHelper()
 
 	obj := &unstructured.Unstructured{}
@@ -277,9 +419,14 @@ func describeObject(manifest []byte) *DescribeView {
 	def, err := definitions.New(catalog.List(), nil).Resolve(obj.GroupVersionKind())
 	Expect(err).NotTo(HaveOccurred())
 
-	view, err := ResolveDescribe(context.Background(), obj, def, nil)
+	view, err := ResolveDescribe(context.Background(), obj, def, pods)
 	Expect(err).NotTo(HaveOccurred())
 	return view
+}
+
+// milvusPod carries the label Milvus component selectors read.
+func milvusPod(name, component string) corev1.Pod {
+	return livePod(name, "node-01", map[string]string{"app.kubernetes.io/component": component}, "0")
 }
 
 // resourceQuantity parses a quantity a fixture spells as a string.
@@ -288,4 +435,16 @@ func resourceQuantity(value string) apiresource.Quantity {
 	quantity, err := apiresource.ParseQuantity(value)
 	Expect(err).NotTo(HaveOccurred())
 	return quantity
+}
+
+// kartaNamed returns a copy of a catalog definition a test can adjust.
+func kartaNamed(name string) *v1alpha1.Karta {
+	GinkgoHelper()
+	for _, karta := range catalog.List() {
+		if karta.Name == name {
+			return karta.DeepCopy()
+		}
+	}
+	Fail("no catalog definition named " + name)
+	return nil
 }

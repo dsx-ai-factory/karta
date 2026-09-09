@@ -9,7 +9,6 @@ import (
 	"maps"
 	"slices"
 	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,14 +26,9 @@ const gpuResourceName = corev1.ResourceName("nvidia.com/gpu")
 // DescribeView is one workload in full. Every describe rendering draws from this
 // one struct, so the human and the machine output cannot drift apart.
 type DescribeView struct {
-	Name       string    `json:"name"`
-	Namespace  string    `json:"namespace"`
-	Kind       string    `json:"kind"`
-	APIVersion string    `json:"apiVersion"`
-	CreatedAt  time.Time `json:"createdAt"`
-	Definition string    `json:"definition"`
-	Origin     string    `json:"origin"`
-	Phases     []string  `json:"phases"`
+	// View is embedded, so its fields stay flat in JSON and cannot drift from
+	// what the get command reports for the same workload.
+	View `json:",inline"`
 	// FileMode marks a view built from a manifest: the structure and desired
 	// scale are real, everything live is absent rather than zero.
 	FileMode bool `json:"fileMode"`
@@ -112,14 +106,7 @@ func ResolveDescribe(
 	}
 
 	view := &DescribeView{
-		Name:       obj.GetName(),
-		Namespace:  obj.GetNamespace(),
-		Kind:       obj.GetKind(),
-		APIVersion: obj.GetAPIVersion(),
-		CreatedAt:  obj.GetCreationTimestamp().Time,
-		Definition: def.Karta.Name,
-		Origin:     string(def.Origin),
-		Phases:     phases(workloadTree),
+		View:       viewOf(obj, def, workloadTree),
 		Components: []ComponentView{},
 	}
 
@@ -136,7 +123,14 @@ func ResolveDescribe(
 		if err != nil {
 			return nil, err
 		}
-		component, err := buildPodBearingComponent(ctx, root.Name(), kindOf(root.Kind()), instances, pods, defs)
+		// The root takes the same pod filter buildComponent applies to a child,
+		// so a definition that scopes its root's pods is honoured.
+		claimed, err := matchComponentType(ctx, defs[root.Name()].PodSelector, pods, true)
+		if err != nil {
+			return nil, fmt.Errorf("match pods to root component: %w", err)
+		}
+
+		component, err := buildPodBearingComponent(ctx, root.Name(), kindOf(root.Kind()), instances, claimed, defs)
 		if err != nil {
 			return nil, fmt.Errorf("build root component: %w", err)
 		}
@@ -177,6 +171,18 @@ func rootInstances(ctx context.Context, root *resource.Component) ([]tree.Instan
 	return instances, nil
 }
 
+// isSolePodOwner reports a definition with a single pod-bearing component, the
+// one case where a component needs no selector to be sure a pod is its own.
+func isSolePodOwner(defs map[string]v1alpha1.ComponentDefinition) bool {
+	owners := 0
+	for _, def := range defs {
+		if def.SpecDefinition != nil {
+			owners++
+		}
+	}
+	return owners == 1
+}
+
 func indexComponentDefs(karta *v1alpha1.Karta) map[string]v1alpha1.ComponentDefinition {
 	defs := make(map[string]v1alpha1.ComponentDefinition, len(karta.Spec.StructureDefinition.ChildComponents)+1)
 	defs[karta.Spec.StructureDefinition.RootComponent.Name] = karta.Spec.StructureDefinition.RootComponent
@@ -197,7 +203,7 @@ func buildComponent(
 	claimed := pods
 	if node.HasPodDefinition {
 		var err error
-		if claimed, err = matchComponentType(ctx, def.PodSelector, pods); err != nil {
+		if claimed, err = matchComponentType(ctx, def.PodSelector, pods, isSolePodOwner(defs)); err != nil {
 			return ComponentView{}, fmt.Errorf("match pods to component %q: %w", node.Name, err)
 		}
 	}
@@ -254,6 +260,18 @@ func buildGroupingComponent(
 			}
 			component.Children = appendComponent(component.Children, child, node.HasPodDefinition)
 			component.aggregate(child)
+		}
+	}
+
+	// With descendants the roll-up already carries the declared scale, since it
+	// multiplies through to them. With none, only a scale the component really
+	// declares is reported: defaulting to one would resurrect the plumbing
+	// components appendComponent drops.
+	if len(component.Children) == 0 {
+		for _, instance := range instances {
+			if instance.Scale != nil {
+				component.Replicas.Desired += replicasOf(instance.Scale)
+			}
 		}
 	}
 	return component, nil
@@ -352,7 +370,17 @@ func podReason(status corev1.PodStatus) string {
 			return condition.Reason
 		}
 	}
-	return status.Reason
+	if status.Reason != "" {
+		return status.Reason
+	}
+	// A pod that ran and stopped carries no status reason, so the ready
+	// condition is the only thing that separates "completed" from "stuck".
+	for _, condition := range status.Conditions {
+		if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionFalse {
+			return condition.Reason
+		}
+	}
+	return ""
 }
 
 func isPodReady(pod *corev1.Pod) bool {
@@ -396,10 +424,17 @@ func instanceLabel(componentName string, instance tree.InstanceNode) string {
 }
 
 // matchComponentType keeps the pods a component's ComponentTypeSelector accepts.
-// A nil selector claims every candidate, right for a root-only workload.
-func matchComponentType(ctx context.Context, selector *v1alpha1.PodSelector, pods []corev1.Pod) ([]corev1.Pod, error) {
+// claimsAll settles the nil-selector case: with nothing to tell components
+// apart, claiming every pod is right for the only one that can own them and
+// wrong for a peer that would double-count what a sibling already reported.
+func matchComponentType(
+	ctx context.Context, selector *v1alpha1.PodSelector, pods []corev1.Pod, claimsAll bool,
+) ([]corev1.Pod, error) {
 	if selector == nil || selector.ComponentTypeSelector == nil {
-		return pods, nil
+		if claimsAll {
+			return pods, nil
+		}
+		return nil, nil
 	}
 	var matched []corev1.Pod
 	for i := range pods {
