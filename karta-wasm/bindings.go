@@ -23,6 +23,16 @@ func jsBuildTree(_ js.Value, arguments []js.Value) any {
 	return encodeEnvelope(workloadTree, err)
 }
 
+func jsEvaluatePhases(_ js.Value, arguments []js.Value) any {
+	if len(arguments) != 2 {
+		return encodeEnvelope(nil, fmt.Errorf("evaluatePhases: expected 2 arguments, got %d", len(arguments)))
+	}
+	definitionJSON := arguments[0].String()
+	workloadJSON := arguments[1].String()
+	phases, err := core.EvaluatePhases(context.Background(), definitionJSON, workloadJSON)
+	return encodeEnvelope(phases, err)
+}
+
 func jsListCatalog(js.Value, []js.Value) any {
 	return encodeEnvelope(core.ListCatalog(), nil)
 }

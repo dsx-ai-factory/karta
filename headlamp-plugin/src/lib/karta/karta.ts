@@ -18,6 +18,8 @@ export interface Envelope {
 export interface KartaWasm {
   /** Builds the workload tree. Returns a WorkloadTree, including the root status. */
   buildTree(definitionJSON: string, workloadJSON: string): Envelope;
+  /** Returns the status phases as string[]. Does not build the tree, so read them off buildTree instead when the tree is needed anyway. */
+  evaluatePhases(definitionJSON: string, workloadJSON: string): Envelope;
   /** Returns the definitions built into the module, as Karta[]. */
   listCatalog(): Envelope;
 }

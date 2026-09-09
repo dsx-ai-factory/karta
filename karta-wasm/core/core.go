@@ -52,6 +52,43 @@ func BuildTree(ctx context.Context, definitionJSON, workloadJSON string) (*tree.
 	return tree.Build(ctx, componentFactory)
 }
 
+// EvaluatePhases returns the workload's status phases. tree.Build computes the
+// root status independently of the component recursion, so the phases are
+// reached without building a tree the caller would discard. The definition is
+// validated here, as tree.Build validates it.
+func EvaluatePhases(ctx context.Context, definitionJSON, workloadJSON string) ([]string, error) {
+	definition, err := DecodeDefinition(definitionJSON)
+	if err != nil {
+		return nil, err
+	}
+	workload, err := DecodeWorkload(workloadJSON)
+	if err != nil {
+		return nil, err
+	}
+	if err := v1alpha1.NewKartaValidator(definition).Validate(); err != nil {
+		return nil, fmt.Errorf("invalid karta: %w", err)
+	}
+
+	componentFactory := resource.NewComponentFactoryFromObject(definition, workload)
+	rootComponent, err := componentFactory.GetRootComponent()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get root component: %w", err)
+	}
+	status, err := rootComponent.GetStatus(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get root status: %w", err)
+	}
+	if status == nil {
+		return []string{}, nil
+	}
+
+	phases := make([]string, len(status.MatchedStatuses))
+	for i, matchedStatus := range status.MatchedStatuses {
+		phases[i] = string(matchedStatus)
+	}
+	return phases, nil
+}
+
 // ListCatalog returns the Karta definitions embedded at build time.
 func ListCatalog() []*v1alpha1.Karta {
 	return catalog.List()
