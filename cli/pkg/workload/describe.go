@@ -94,7 +94,9 @@ func (r Resources) scaled(replicas int32) Resources {
 }
 
 // ResolveDescribe reads obj through def, placing pods on the component and
-// instance its selectors name. pods must already be scoped; nil is file mode.
+// instance its selectors name. pods must already be scoped. Passing none yields
+// the same view with every live field empty, which is what file mode renders;
+// marking the view FileMode is the caller's, since only it knows the source.
 func ResolveDescribe(
 	ctx context.Context, obj *unstructured.Unstructured, def definitions.Definition, pods []corev1.Pod,
 ) (*DescribeView, error) {
@@ -123,9 +125,10 @@ func ResolveDescribe(
 		if err != nil {
 			return nil, err
 		}
-		// The root takes the same pod filter buildComponent applies to a child,
-		// so a definition that scopes its root's pods is honoured.
-		claimed, err := matchComponentType(ctx, defs[root.Name()].PodSelector, pods, true)
+		// The root takes the same pod filter and the same selectorless rule
+		// buildComponent applies to a child, so being the root is never on its
+		// own a licence to claim a pod another component owns.
+		claimed, err := matchComponentType(ctx, defs[root.Name()].PodSelector, pods, isSolePodOwner(defs))
 		if err != nil {
 			return nil, fmt.Errorf("match pods to root component: %w", err)
 		}

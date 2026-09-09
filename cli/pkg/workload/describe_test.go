@@ -32,15 +32,7 @@ func describeFixture(name string, pods ...corev1.Pod) *DescribeView {
 	raw, err := os.ReadFile(filepath.Join("testdata", name))
 	Expect(err).NotTo(HaveOccurred())
 
-	obj := &unstructured.Unstructured{}
-	Expect(yaml.Unmarshal(raw, obj)).To(Succeed())
-
-	def, err := definitions.New(catalog.List(), nil).Resolve(obj.GroupVersionKind())
-	Expect(err).NotTo(HaveOccurred())
-
-	view, err := ResolveDescribe(context.Background(), obj, def, pods)
-	Expect(err).NotTo(HaveOccurred())
-	return view
+	return describeObject(raw, pods...)
 }
 
 // componentNamed finds a component at any depth, so a test does not have to
