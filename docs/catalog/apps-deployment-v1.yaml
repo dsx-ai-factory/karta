@@ -24,7 +24,7 @@ spec:
           messageFieldName: message
           reasonFieldName: reason
         statusMappings:
-          initializing:
+          progressing:
             - byConditions:
                 - type: Progressing
                   status: "True"

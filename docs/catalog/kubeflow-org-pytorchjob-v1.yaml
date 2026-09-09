@@ -19,10 +19,6 @@ spec:
           statusFieldName: status
           messageFieldName: message
         statusMappings:
-          initializing:
-            - byConditions:
-                - type: Created
-                  status: "True"
           running:
             - byConditions:
                 - type: Running

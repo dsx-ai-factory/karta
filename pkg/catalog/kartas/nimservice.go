@@ -45,9 +45,10 @@ func NIMService() *v1alpha1.Karta {
 							MessageFieldName: ptr.To("message"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{
+							Pending: []v1alpha1.StatusMatcher{{ByPhase: "Pending"}},
+							Progressing: []v1alpha1.StatusMatcher{
 								{ByPhase: "NotReady"},
-								{ByPhase: "Pending"},
+								{ByPhase: "PVC-Created"},
 							},
 							Running: []v1alpha1.StatusMatcher{
 								{ByPhase: "Ready"},

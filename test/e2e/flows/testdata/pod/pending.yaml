@@ -2,13 +2,13 @@
 # Copyright (c) 2026 NVIDIA Corporation
 #
 # A bare Pod pinned to a nonexistent node via nodeSelector, so it can never schedule
-# and stays status.phase=Pending. The Karta library reads Pending as Initializing. The
+# and stays status.phase=Pending. The Karta library reads Pending as Pending. The
 # fixed "didn't match node selector" scheduler message is independent of cluster
 # capacity, keeping the recorded status stable.
 apiVersion: v1
 kind: Pod
 metadata:
-  name: karta-e2e-pod-initializing
+  name: karta-e2e-pod-pending
   namespace: default
 spec:
   restartPolicy: Never

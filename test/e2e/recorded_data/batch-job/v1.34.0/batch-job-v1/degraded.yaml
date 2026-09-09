@@ -1,0 +1,216 @@
+events:
+- kind: STATE
+  object:
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      creationTimestamp: "2026-09-08T20:53:27Z"
+      generation: 1
+      labels:
+        batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+        batch.kubernetes.io/job-name: karta-e2e-job-degraded
+        controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+        job-name: karta-e2e-job-degraded
+      name: karta-e2e-job-degraded
+      namespace: test-zzhrw
+      uid: d7d23911-c3df-4cf6-bafe-56a062154090
+    spec:
+      backoffLimit: 0
+      completionMode: Indexed
+      completions: 2
+      manualSelector: false
+      parallelism: 2
+      podReplacementPolicy: TerminatingOrFailed
+      selector:
+        matchLabels:
+          batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+      suspend: false
+      template:
+        metadata:
+          labels:
+            batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+            batch.kubernetes.io/job-name: karta-e2e-job-degraded
+            controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+            job-name: karta-e2e-job-degraded
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - if [ "$JOB_COMPLETION_INDEX" = "0" ]; then true; else sleep infinity;
+              fi
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      active: 2
+      ready: 0
+      startTime: "2026-09-08T20:53:27Z"
+      terminating: 0
+      uncountedTerminatedPods: {}
+  phases:
+  - Progressing
+  resourceVersion: "60747"
+  state: Progressing
+- kind: STATE
+  object:
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      creationTimestamp: "2026-09-08T20:53:27Z"
+      generation: 1
+      labels:
+        batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+        batch.kubernetes.io/job-name: karta-e2e-job-degraded
+        controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+        job-name: karta-e2e-job-degraded
+      name: karta-e2e-job-degraded
+      namespace: test-zzhrw
+      uid: d7d23911-c3df-4cf6-bafe-56a062154090
+    spec:
+      backoffLimit: 0
+      completionMode: Indexed
+      completions: 2
+      manualSelector: false
+      parallelism: 2
+      podReplacementPolicy: TerminatingOrFailed
+      selector:
+        matchLabels:
+          batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+      suspend: false
+      template:
+        metadata:
+          labels:
+            batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+            batch.kubernetes.io/job-name: karta-e2e-job-degraded
+            controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+            job-name: karta-e2e-job-degraded
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - if [ "$JOB_COMPLETION_INDEX" = "0" ]; then true; else sleep infinity;
+              fi
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      active: 2
+      ready: 1
+      startTime: "2026-09-08T20:53:27Z"
+      terminating: 0
+      uncountedTerminatedPods: {}
+  phases:
+  - Running
+  resourceVersion: "60770"
+  state: Running
+- kind: STATE
+  object:
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      creationTimestamp: "2026-09-08T20:53:27Z"
+      generation: 1
+      labels:
+        batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+        batch.kubernetes.io/job-name: karta-e2e-job-degraded
+        controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+        job-name: karta-e2e-job-degraded
+      name: karta-e2e-job-degraded
+      namespace: test-zzhrw
+      uid: d7d23911-c3df-4cf6-bafe-56a062154090
+    spec:
+      backoffLimit: 0
+      completionMode: Indexed
+      completions: 2
+      manualSelector: false
+      parallelism: 2
+      podReplacementPolicy: TerminatingOrFailed
+      selector:
+        matchLabels:
+          batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+      suspend: false
+      template:
+        metadata:
+          labels:
+            batch.kubernetes.io/controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+            batch.kubernetes.io/job-name: karta-e2e-job-degraded
+            controller-uid: d7d23911-c3df-4cf6-bafe-56a062154090
+            job-name: karta-e2e-job-degraded
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - if [ "$JOB_COMPLETION_INDEX" = "0" ]; then true; else sleep infinity;
+              fi
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      active: 1
+      completedIndexes: "0"
+      ready: 1
+      startTime: "2026-09-08T20:53:27Z"
+      succeeded: 1
+      terminating: 0
+      uncountedTerminatedPods: {}
+  phases:
+  - Running
+  - Degraded
+  resourceVersion: "60782"
+  state: Degraded
+flow: degraded
+kartaFile: docs/catalog/batch-job-v1.yaml
+kartaName: batch-job-v1
+operator: batch-job
+result:
+  succeeded: true
+schemaVersion: 1
+summary:
+- amount: 1
+  phases:
+  - Progressing
+- amount: 1
+  phases:
+  - Running
+- amount: 1
+  phases:
+  - Running
+  - Degraded
+version: v1.34.0
+want: Degraded

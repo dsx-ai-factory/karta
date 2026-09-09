@@ -34,6 +34,9 @@ func KServe() *v1alpha1.Karta {
 								{Type: "RoutesReady", Status: ptr.To("True")},
 								{Type: "LatestDeploymentReady", Status: ptr.To("True")},
 							}}},
+							// Ready is Unknown while the predictor, routes, and ingress come up; the
+							// conditionless just-created window reads Undefined.
+							Progressing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("Unknown")}}}},
 							Failed: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
 								{Type: "PredictorReady", Status: ptr.To("False")},
 								{Type: "PredictorConfigurationReady", Status: ptr.To("False")},

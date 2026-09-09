@@ -24,12 +24,10 @@ func DynamoV1beta1() *v1alpha1.Karta {
 					StatusDefinition: &v1alpha1.StatusDefinition{
 						PhaseDefinition: &v1alpha1.PhaseDefinition{Path: ".status.state"},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{
-								{ByPhase: "initializing"},
-								{ByPhase: "pending"},
-							},
-							Running: []v1alpha1.StatusMatcher{{ByPhase: "successful"}},
-							Failed:  []v1alpha1.StatusMatcher{{ByPhase: "failed"}},
+							Pending:     []v1alpha1.StatusMatcher{{ByPhase: "pending"}},
+							Progressing: []v1alpha1.StatusMatcher{{ByPhase: "initializing"}},
+							Running:     []v1alpha1.StatusMatcher{{ByPhase: "successful"}},
+							Failed:      []v1alpha1.StatusMatcher{{ByPhase: "failed"}},
 						},
 					},
 				},

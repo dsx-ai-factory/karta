@@ -10,9 +10,12 @@ import (
 	"strings"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
@@ -61,4 +64,17 @@ func operatorVersion(op string) string {
 		}
 	}
 	return serverVersion
+}
+
+// ensureSecret creates an opaque Secret in the flow's namespace for a workload that references it. The
+// k8s-nim-operator reads a NIMService's authSecret from the NIMService's own namespace, but up.sh only
+// creates the dummy ngc-secret in default, so a flow recording in a throwaway namespace must seed its own.
+// Deleted after the spec tree that created it.
+func ensureSecret(ctx context.Context, name string, data map[string]string) {
+	sec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: testNamespace},
+		StringData: data,
+	}
+	Expect(k8sClient.Create(ctx, sec)).To(Succeed(), "create secret %s", name)
+	DeferCleanup(func(ctx SpecContext) { _ = k8sClient.Delete(ctx, sec) })
 }

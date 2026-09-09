@@ -26,7 +26,7 @@ spec:
           messageFieldName: message
           reasonFieldName: reason
         statusMappings:
-          initializing:
+          pending:
             - byPhase: Pending
           running:
             - byPhase: Running

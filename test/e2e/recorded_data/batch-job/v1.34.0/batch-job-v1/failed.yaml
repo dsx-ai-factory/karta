@@ -1,0 +1,169 @@
+events:
+- kind: STATE
+  object:
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      creationTimestamp: "2026-09-08T20:52:56Z"
+      generation: 1
+      labels:
+        batch.kubernetes.io/controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+        batch.kubernetes.io/job-name: karta-e2e-job-failed
+        controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+        job-name: karta-e2e-job-failed
+      name: karta-e2e-job-failed
+      namespace: test-zzhrw
+      uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+    spec:
+      backoffLimit: 0
+      completionMode: NonIndexed
+      completions: 1
+      manualSelector: false
+      parallelism: 1
+      podReplacementPolicy: TerminatingOrFailed
+      selector:
+        matchLabels:
+          batch.kubernetes.io/controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+      suspend: false
+      template:
+        metadata:
+          labels:
+            batch.kubernetes.io/controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+            batch.kubernetes.io/job-name: karta-e2e-job-failed
+            controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+            job-name: karta-e2e-job-failed
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - sleep 5; exit 1
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            readinessProbe:
+              exec:
+                command:
+                - "false"
+              failureThreshold: 3
+              initialDelaySeconds: 1
+              periodSeconds: 2
+              successThreshold: 1
+              timeoutSeconds: 1
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      active: 1
+      ready: 0
+      startTime: "2026-09-08T20:52:56Z"
+      terminating: 0
+      uncountedTerminatedPods: {}
+  phases:
+  - Progressing
+  resourceVersion: "60460"
+  state: Progressing
+- kind: STATE
+  object:
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      creationTimestamp: "2026-09-08T20:52:56Z"
+      generation: 1
+      labels:
+        batch.kubernetes.io/controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+        batch.kubernetes.io/job-name: karta-e2e-job-failed
+        controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+        job-name: karta-e2e-job-failed
+      name: karta-e2e-job-failed
+      namespace: test-zzhrw
+      uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+    spec:
+      backoffLimit: 0
+      completionMode: NonIndexed
+      completions: 1
+      manualSelector: false
+      parallelism: 1
+      podReplacementPolicy: TerminatingOrFailed
+      selector:
+        matchLabels:
+          batch.kubernetes.io/controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+      suspend: false
+      template:
+        metadata:
+          labels:
+            batch.kubernetes.io/controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+            batch.kubernetes.io/job-name: karta-e2e-job-failed
+            controller-uid: 73074d3d-5e4c-4af9-9600-40947f7f56dc
+            job-name: karta-e2e-job-failed
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - sleep 5; exit 1
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            readinessProbe:
+              exec:
+                command:
+                - "false"
+              failureThreshold: 3
+              initialDelaySeconds: 1
+              periodSeconds: 2
+              successThreshold: 1
+              timeoutSeconds: 1
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      conditions:
+      - lastProbeTime: "2026-09-08T20:53:04Z"
+        lastTransitionTime: "2026-09-08T20:53:04Z"
+        message: Job has reached the specified backoff limit
+        reason: BackoffLimitExceeded
+        status: "True"
+        type: FailureTarget
+      ready: 0
+      startTime: "2026-09-08T20:52:56Z"
+      terminating: 0
+      uncountedTerminatedPods:
+        failed:
+        - d4a49865-5333-4e7e-b00f-62e14f14ff6e
+  phases:
+  - Failed
+  resourceVersion: "60539"
+  state: Failed
+flow: failed
+kartaFile: docs/catalog/batch-job-v1.yaml
+kartaName: batch-job-v1
+operator: batch-job
+result:
+  succeeded: true
+schemaVersion: 1
+summary:
+- amount: 1
+  phases:
+  - Progressing
+- amount: 1
+  phases:
+  - Failed
+version: v1.34.0
+want: Failed

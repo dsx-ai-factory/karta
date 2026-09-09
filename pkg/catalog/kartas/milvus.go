@@ -35,9 +35,7 @@ func Milvus() *v1alpha1.Karta {
 							Running: []v1alpha1.StatusMatcher{
 								{ByPhase: "Healthy"},
 							},
-							Initializing: []v1alpha1.StatusMatcher{
-								{ByPhase: "Pending"},
-							},
+							Pending: []v1alpha1.StatusMatcher{{ByPhase: "Pending"}},
 							Degraded: []v1alpha1.StatusMatcher{
 								{ByPhase: "Unhealthy"},
 							},

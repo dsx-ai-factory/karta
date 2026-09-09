@@ -20,7 +20,7 @@ spec:
           messageFieldName: message
           reasonFieldName: reason
         statusMappings:
-          initializing:
+          progressing:
             - byExpression:
                 expression: (.spec.replicas // 0) > 0 and (.status.availableReplicas // 0) < (.spec.replicas // 0)
                 expectedResult: "true"

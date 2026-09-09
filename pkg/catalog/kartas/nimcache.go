@@ -41,12 +41,13 @@ func NIMCache() *v1alpha1.Karta {
 							MessageFieldName: ptr.To("message"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{
+							Pending: []v1alpha1.StatusMatcher{
 								{ByPhase: "Pending"},
 								{ByPhase: "NotReady"},
+							},
+							Progressing: []v1alpha1.StatusMatcher{
 								{ByPhase: "PVC-Created"},
 								{ByPhase: "Started"},
-								{ByConditions: []v1alpha1.ExpectedCondition{{Type: "NIM_CACHE_JOB_CREATED", Status: ptr.To("True")}}},
 							},
 							Running: []v1alpha1.StatusMatcher{
 								{ByPhase: "InProgress"},

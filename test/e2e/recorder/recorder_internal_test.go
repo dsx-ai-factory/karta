@@ -16,10 +16,11 @@ import (
 // Offline specs for the pure recorder helpers; no cluster.
 
 var (
-	initializing = kartav1alpha1.InitializingStatus
-	running      = kartav1alpha1.RunningStatus
-	completed    = kartav1alpha1.CompletedStatus
-	failed       = kartav1alpha1.FailedStatus
+	pending   = kartav1alpha1.PendingStatus
+	running   = kartav1alpha1.RunningStatus
+	completed = kartav1alpha1.CompletedStatus
+	failed    = kartav1alpha1.FailedStatus
+	undefined = kartav1alpha1.UndefinedStatus
 )
 
 var _ = Describe("builder guards", func() {
@@ -64,19 +65,57 @@ var _ = Describe("Save", func() {
 	})
 })
 
-var _ = Describe("classify", func() {
-	It("keeps the furthest-along state the workload matches", func() {
-		states := []namedState{
-			{Name: running, Match: intAtLeast(1, "status", "active")},
-			{Name: completed, Match: condTrue("Complete")},
-		}
-		Expect(classify(objWithStatus(map[string]any{"active": int64(1)}), states)).To(Equal(running))
+var _ = Describe("judge", func() {
+	states := []namedState{
+		{Name: running, Match: intAtLeast(1, "status", "active")},
+		{Name: completed, Match: condTrue("Complete")},
+	}
+
+	It("keeps every matched state, least- to most-advanced, with the strongest last", func() {
 		both := objWithStatus(map[string]any{
 			"active":     int64(1),
 			"conditions": []any{map[string]any{"type": "Complete", "status": "True"}},
 		})
-		Expect(classify(both, states)).To(Equal(completed))
-		Expect(classify(objWithStatus(map[string]any{}), states)).To(BeEmpty())
+		Expect(judge(both, states)).To(Equal(phases(running, completed)))
+		Expect(Strongest(judge(both, states))).To(Equal(completed))
+		Expect(judge(objWithStatus(map[string]any{"active": int64(1)}), states)).To(Equal(phases(running)))
+	})
+
+	It("judges a frame matching nothing as Undefined", func() {
+		Expect(judge(objWithStatus(map[string]any{}), states)).To(Equal(phases(undefined)))
+	})
+})
+
+var _ = Describe("the recording summary", func() {
+	It("run-length encodes the walk, keeping the order and skipping ACTION events", func() {
+		frame := func(phases ...string) Event { return Event{Kind: EventState, Phases: phases} }
+		events := []Event{
+			frame("Initializing"),
+			frame("Initializing"),
+			frame("Initializing", "Running"),
+			{Kind: EventAction, Action: &RecordedAction{Name: string(ActionSuspend)}},
+			frame("Initializing", "Running"),
+			frame("Initializing"),
+			frame("Completed"),
+		}
+
+		Expect(summarize(events)).To(Equal([]SummaryEntry{
+			{Phases: []string{"Initializing"}, Amount: 2},
+			{Phases: []string{"Initializing", "Running"}, Amount: 2},
+			{Phases: []string{"Initializing"}, Amount: 1},
+			{Phases: []string{"Completed"}, Amount: 1},
+		}))
+	})
+
+	It("summarizes an empty stream to nothing", func() {
+		Expect(summarize(nil)).To(BeEmpty())
+	})
+})
+
+var _ = Describe("Strongest", func() {
+	It("is the last phase, Undefined when the frame matched nothing", func() {
+		Expect(Strongest([]string{"Initializing", "Running"})).To(Equal("Running"))
+		Expect(Strongest([]string(nil))).To(Equal(string(kartav1alpha1.UndefinedStatus)))
 	})
 })
 
@@ -85,7 +124,7 @@ var _ = Describe("the recorded walk", func() {
 	// unless the journey declares the dip.
 	It("keeps a backwards dip and the order check flags it unless declared", func() {
 		states := []namedState{
-			{Name: initializing, Match: intAtLeast(1, "status", "active")},
+			{Name: pending, Match: intAtLeast(1, "status", "active")},
 			{Name: running, Match: intAtLeast(1, "status", "ready")},
 			{Name: completed, Match: condTrue("Complete")},
 		}
@@ -101,13 +140,13 @@ var _ = Describe("the recorded walk", func() {
 
 		o := &observation{}
 		for _, cr := range seq {
-			o.keep(cr, classify(cr, states), true)
+			o.keep(cr, judge(cr, states), true)
 		}
 
-		Expect(o.states()).To(Equal([]kartav1alpha1.ResourceStatus{initializing, running, initializing, completed}))
-		Expect(validateObservedOrder(steps(initializing, running, completed), o.states(), completed)).
+		Expect(o.states()).To(Equal([]kartav1alpha1.ResourceStatus{pending, running, pending, completed}))
+		Expect(validateObservedOrder(steps(pending, running, completed), o.states(), completed)).
 			To(HaveOccurred(), "strict journey should reject the undeclared Running -> Initializing dip")
-		Expect(validateObservedOrder(steps(initializing, running, initializing, completed), o.states(), completed)).
+		Expect(validateObservedOrder(steps(pending, running, pending, completed), o.states(), completed)).
 			To(Succeed(), "declaring the Initializing revisit should accept the dip")
 	})
 
@@ -115,8 +154,8 @@ var _ = Describe("the recorded walk", func() {
 	// order-checked walk.
 	It("keeps a stale frame out of the judged walk", func() {
 		o := &observation{}
-		o.keep(objWithStatus(map[string]any{"active": int64(1)}), initializing, true)
-		o.keep(objWithStatus(map[string]any{"active": int64(2)}), initializing, false)
+		o.keep(objWithStatus(map[string]any{"active": int64(1)}), phases(pending), true)
+		o.keep(objWithStatus(map[string]any{"active": int64(2)}), phases(pending), false)
 
 		Expect(o.snapshots).To(HaveLen(2))
 		Expect(o.snapshots[1].staleObservedGeneration).To(BeTrue())
@@ -133,23 +172,33 @@ var _ = DescribeTable("validateObservedOrder",
 			Expect(err).To(HaveOccurred())
 		}
 	},
-	Entry("exact walk", steps(initializing, running, completed), visits(initializing, running, completed), true),
-	Entry("skip a required step fails", steps(initializing, running, completed), visits(initializing, completed), false),
+	Entry("exact walk", steps(pending, running, completed), visits(pending, running, completed), true),
+	Entry("skip a required step fails", steps(pending, running, completed), visits(pending, completed), false),
 	Entry("skip an optional step is ok",
-		[]journeyStep{{State: initializing}, {State: running, Optional: true}, {State: completed}},
-		visits(initializing, completed), true),
-	Entry("undeclared state fails", steps(initializing, running), visits(initializing, failed), false),
-	Entry("repeat dip missed is ok", steps(initializing, running, initializing, completed),
-		visits(initializing, running, completed), true),
+		[]journeyStep{{State: pending}, {State: running, Optional: true}, {State: completed}},
+		visits(pending, completed), true),
+	Entry("undeclared state fails", steps(pending, running), visits(pending, failed), false),
+	Entry("repeat dip missed is ok", steps(pending, running, pending, completed),
+		visits(pending, running, completed), true),
 	Entry("optional dip missed is ok",
-		[]journeyStep{{State: initializing}, {State: running}, {State: initializing, Optional: true}, {State: completed}},
-		visits(initializing, running, completed), true),
+		[]journeyStep{{State: pending}, {State: running}, {State: pending, Optional: true}, {State: completed}},
+		visits(pending, running, completed), true),
 	Entry("optional dip caught is ok",
-		[]journeyStep{{State: initializing}, {State: running}, {State: initializing, Optional: true}, {State: completed}},
-		visits(initializing, running, initializing, completed), true),
-	Entry("undeclared dip fails", steps(initializing, running, completed),
-		visits(initializing, running, initializing, completed), false),
-	Entry("wrong terminal fails", steps(initializing, running, completed), visits(initializing, running), false),
+		[]journeyStep{{State: pending}, {State: running}, {State: pending, Optional: true}, {State: completed}},
+		visits(pending, running, pending, completed), true),
+	Entry("undeclared dip fails", steps(pending, running, completed),
+		visits(pending, running, pending, completed), false),
+	Entry("wrong terminal fails", steps(pending, running, completed), visits(pending, running), false),
+	Entry("undefined dip is tolerated", steps(pending, running),
+		visits(pending, running, undefined, running), true),
+	Entry("undefined between steps is tolerated", steps(pending, running),
+		visits(pending, undefined, running), true),
+	Entry("undefined before the first step is tolerated", steps(pending, running),
+		visits(undefined, pending, running), true),
+	Entry("dip into a real state stays rejected", steps(pending, running),
+		visits(pending, running, completed, running), false),
+	Entry("undefined terminal fails", steps(pending, running),
+		visits(pending, running, undefined), false),
 )
 
 var _ = Describe("hasObservedCurrentGeneration", func() {
@@ -210,5 +259,9 @@ func steps(states ...kartav1alpha1.ResourceStatus) []journeyStep {
 }
 
 func visits(states ...kartav1alpha1.ResourceStatus) []kartav1alpha1.ResourceStatus {
+	return states
+}
+
+func phases(states ...kartav1alpha1.ResourceStatus) []kartav1alpha1.ResourceStatus {
 	return states
 }

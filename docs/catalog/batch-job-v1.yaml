@@ -24,7 +24,7 @@ spec:
           messageFieldName: message
           reasonFieldName: reason
         statusMappings:
-          initializing:
+          progressing:
             - byExpression:
                 expression: (.status.active // 0) > 0 and (.status.ready // 0) == 0
                 expectedResult: "true"
@@ -36,9 +36,15 @@ spec:
             - byConditions:
                 - type: Complete
                   status: "True"
+            - byConditions:
+                - type: SuccessCriteriaMet
+                  status: "True"
           failed:
             - byConditions:
                 - type: Failed
+                  status: "True"
+            - byConditions:
+                - type: FailureTarget
                   status: "True"
           degraded:
             - byExpression:

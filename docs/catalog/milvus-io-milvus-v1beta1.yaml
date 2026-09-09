@@ -20,7 +20,7 @@ spec:
           typeFieldName: type
           statusFieldName: status
         statusMappings:
-          initializing:
+          pending:
             - byPhase: Pending
           running:
             - byPhase: Healthy

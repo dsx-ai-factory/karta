@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# A JobSet created already suspended. The resumed flow observes it Suspended, clears spec.suspend,
+# and the JobSet starts a replicated Job that runs to completion. sleep 20 with a readiness probe
+# gives a stable Running window before the JobSet reports Completed.
+apiVersion: jobset.x-k8s.io/v1alpha2
+kind: JobSet
+metadata:
+  name: karta-e2e-jobset-resumed
+  namespace: default
+spec:
+  suspend: true
+  replicatedJobs:
+    - name: workers
+      replicas: 1
+      template:
+        spec:
+          parallelism: 1
+          completions: 1
+          backoffLimit: 0
+          template:
+            spec:
+              restartPolicy: Never
+              containers:
+                - name: worker
+                  image: busybox:1.36
+                  command: ["sh", "-c", "sleep 20"]
+                  readinessProbe:
+                    exec:
+                      command: ["true"]
+                    initialDelaySeconds: 6
+                    periodSeconds: 2
+                  resources:
+                    requests: {cpu: 50m, memory: 32Mi}

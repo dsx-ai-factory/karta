@@ -1,0 +1,60 @@
+events:
+- kind: STATE
+  object:
+    apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      creationTimestamp: "2026-09-09T08:43:00Z"
+      generation: 1
+      name: karta-e2e-cronjob-born-suspended
+      namespace: test-ql2jk
+      uid: eb14d3d2-38bf-4ed4-91fd-20d6513d9adb
+    spec:
+      concurrencyPolicy: Allow
+      failedJobsHistoryLimit: 1
+      jobTemplate:
+        metadata: {}
+        spec:
+          template:
+            metadata: {}
+            spec:
+              containers:
+              - command:
+                - "true"
+                image: busybox:1.36
+                imagePullPolicy: IfNotPresent
+                name: worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 32Mi
+                terminationMessagePath: /dev/termination-log
+                terminationMessagePolicy: File
+              dnsPolicy: ClusterFirst
+              restartPolicy: Never
+              schedulerName: default-scheduler
+              securityContext: {}
+              terminationGracePeriodSeconds: 30
+      schedule: 0 0 1 1 *
+      successfulJobsHistoryLimit: 3
+      suspend: true
+    status: {}
+  phases:
+  - Pending
+  - Suspended
+  resourceVersion: "229437"
+  state: Suspended
+flow: born-suspended
+kartaFile: docs/catalog/batch-cronjob-v1.yaml
+kartaName: batch-cronjob-v1
+operator: cronjob
+result:
+  succeeded: true
+schemaVersion: 1
+summary:
+- amount: 1
+  phases:
+  - Pending
+  - Suspended
+version: v1.34.0
+want: Suspended

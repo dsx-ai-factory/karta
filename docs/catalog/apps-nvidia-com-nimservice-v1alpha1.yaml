@@ -31,9 +31,11 @@ spec:
           statusFieldName: status
           messageFieldName: message
         statusMappings:
-          initializing:
-            - byPhase: NotReady
+          pending:
             - byPhase: Pending
+          progressing:
+            - byPhase: NotReady
+            - byPhase: PVC-Created
           running:
             - byPhase: Ready
           failed:

@@ -233,12 +233,15 @@ type ReplicaSelector struct {
 }
 
 // ResourceStatus represents the high-level status of a component.
-// +kubebuilder:validation:Enum=Initializing;Running;Completed;Failed;Degraded;Undefined;Suspended;Suspending;Resuming
+// +kubebuilder:validation:Enum=Pending;Progressing;Running;Completed;Failed;Degraded;Undefined;Suspended;Suspending;Resuming
 type ResourceStatus string
 
 const (
-	// InitializingStatus indicates the component has been created or starting up or preparing to run (pre Running status)
-	InitializingStatus ResourceStatus = "Initializing"
+	// PendingStatus indicates the component is waiting and nothing runs yet (unscheduled, out of quota, queued)
+	PendingStatus ResourceStatus = "Pending"
+
+	// ProgressingStatus indicates the component is actively moving toward Running (pods creating, images pulling, scaling)
+	ProgressingStatus ResourceStatus = "Progressing"
 
 	// RunningStatus indicates the component is actively running
 	RunningStatus ResourceStatus = "Running"
@@ -318,11 +321,17 @@ type ConditionsDefinition struct {
 // Each status field contains an array of matchers evaluated with OR logic:
 // if ANY matcher in the array succeeds, that status is matched.
 type StatusMappings struct {
-	// Initializing defines matchers for the Initializing status.
+	// Pending defines matchers for the Pending status.
 	// Multiple matchers are OR'd together.
 	// +kubebuilder:validation:Optional
 	// +listType=atomic
-	Initializing []StatusMatcher `json:"initializing,omitempty"`
+	Pending []StatusMatcher `json:"pending,omitempty"`
+
+	// Progressing defines matchers for the Progressing status.
+	// Multiple matchers are OR'd together.
+	// +kubebuilder:validation:Optional
+	// +listType=atomic
+	Progressing []StatusMatcher `json:"progressing,omitempty"`
 
 	// Running defines matchers for the Running status.
 	// Multiple matchers are OR'd together.
@@ -383,7 +392,8 @@ func (m StatusMappings) Entries() []StatusMatchEntry {
 		{RunningStatus, m.Running},
 		{FailedStatus, m.Failed},
 		{CompletedStatus, m.Completed},
-		{InitializingStatus, m.Initializing},
+		{PendingStatus, m.Pending},
+		{ProgressingStatus, m.Progressing},
 		{DegradedStatus, m.Degraded},
 	}
 }

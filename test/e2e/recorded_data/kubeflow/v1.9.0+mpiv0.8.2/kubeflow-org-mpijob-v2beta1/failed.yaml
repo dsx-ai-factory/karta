@@ -1,0 +1,444 @@
+events:
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v2beta1
+    kind: MPIJob
+    metadata:
+      creationTimestamp: "2026-09-08T20:48:19Z"
+      generation: 1
+      name: karta-e2e-mpi-failed
+      namespace: test-zzhrw
+      uid: 75a18630-80ec-4131-9c92-c094cccdc08d
+    spec:
+      launcherCreationPolicy: AtStartup
+      mpiImplementation: OpenMPI
+      mpiReplicaSpecs:
+        Launcher:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - "false"
+                image: busybox:1.36
+                name: mpi-launcher
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+        Worker:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - sleep
+                - infinity
+                image: busybox:1.36
+                name: mpi-worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runLauncherAsWorker: false
+      runPolicy:
+        backoffLimit: 0
+        cleanPodPolicy: None
+        suspend: false
+      slotsPerWorker: 1
+      sshAuthMountPath: /root/.ssh
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-08T20:48:19Z"
+        lastUpdateTime: "2026-09-08T20:48:19Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is created.
+        reason: MPIJobCreated
+        status: "True"
+        type: Created
+      replicaStatuses:
+        Launcher: {}
+        Worker: {}
+      startTime: "2026-09-08T20:48:19Z"
+  phases:
+  - Undefined
+  resourceVersion: "57442"
+  state: Undefined
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v2beta1
+    kind: MPIJob
+    metadata:
+      creationTimestamp: "2026-09-08T20:48:19Z"
+      generation: 1
+      name: karta-e2e-mpi-failed
+      namespace: test-zzhrw
+      uid: 75a18630-80ec-4131-9c92-c094cccdc08d
+    spec:
+      launcherCreationPolicy: AtStartup
+      mpiImplementation: OpenMPI
+      mpiReplicaSpecs:
+        Launcher:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - "false"
+                image: busybox:1.36
+                name: mpi-launcher
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+        Worker:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - sleep
+                - infinity
+                image: busybox:1.36
+                name: mpi-worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runLauncherAsWorker: false
+      runPolicy:
+        backoffLimit: 0
+        cleanPodPolicy: None
+        suspend: false
+      slotsPerWorker: 1
+      sshAuthMountPath: /root/.ssh
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-08T20:48:19Z"
+        lastUpdateTime: "2026-09-08T20:48:19Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is created.
+        reason: MPIJobCreated
+        status: "True"
+        type: Created
+      replicaStatuses:
+        Launcher:
+          active: 1
+        Worker: {}
+      startTime: "2026-09-08T20:48:19Z"
+  phases:
+  - Undefined
+  resourceVersion: "57473"
+  state: Undefined
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v2beta1
+    kind: MPIJob
+    metadata:
+      creationTimestamp: "2026-09-08T20:48:19Z"
+      generation: 1
+      name: karta-e2e-mpi-failed
+      namespace: test-zzhrw
+      uid: 75a18630-80ec-4131-9c92-c094cccdc08d
+    spec:
+      launcherCreationPolicy: AtStartup
+      mpiImplementation: OpenMPI
+      mpiReplicaSpecs:
+        Launcher:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - "false"
+                image: busybox:1.36
+                name: mpi-launcher
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+        Worker:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - sleep
+                - infinity
+                image: busybox:1.36
+                name: mpi-worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runLauncherAsWorker: false
+      runPolicy:
+        backoffLimit: 0
+        cleanPodPolicy: None
+        suspend: false
+      slotsPerWorker: 1
+      sshAuthMountPath: /root/.ssh
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-08T20:48:19Z"
+        lastUpdateTime: "2026-09-08T20:48:19Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is created.
+        reason: MPIJobCreated
+        status: "True"
+        type: Created
+      - lastTransitionTime: "2026-09-08T20:48:20Z"
+        lastUpdateTime: "2026-09-08T20:48:20Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is running.
+        reason: MPIJobRunning
+        status: "True"
+        type: Running
+      replicaStatuses:
+        Launcher:
+          active: 1
+        Worker:
+          active: 1
+      startTime: "2026-09-08T20:48:19Z"
+  phases:
+  - Running
+  resourceVersion: "57481"
+  state: Running
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v2beta1
+    kind: MPIJob
+    metadata:
+      creationTimestamp: "2026-09-08T20:48:19Z"
+      generation: 1
+      name: karta-e2e-mpi-failed
+      namespace: test-zzhrw
+      uid: 75a18630-80ec-4131-9c92-c094cccdc08d
+    spec:
+      launcherCreationPolicy: AtStartup
+      mpiImplementation: OpenMPI
+      mpiReplicaSpecs:
+        Launcher:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - "false"
+                image: busybox:1.36
+                name: mpi-launcher
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+        Worker:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - sleep
+                - infinity
+                image: busybox:1.36
+                name: mpi-worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runLauncherAsWorker: false
+      runPolicy:
+        backoffLimit: 0
+        cleanPodPolicy: None
+        suspend: false
+      slotsPerWorker: 1
+      sshAuthMountPath: /root/.ssh
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-08T20:48:19Z"
+        lastUpdateTime: "2026-09-08T20:48:19Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is created.
+        reason: MPIJobCreated
+        status: "True"
+        type: Created
+      - lastTransitionTime: "2026-09-08T20:48:20Z"
+        lastUpdateTime: "2026-09-08T20:48:20Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is running.
+        reason: MPIJobRunning
+        status: "True"
+        type: Running
+      replicaStatuses:
+        Launcher:
+          active: 1
+          failed: 1
+        Worker:
+          active: 1
+      startTime: "2026-09-08T20:48:19Z"
+  phases:
+  - Running
+  resourceVersion: "57523"
+  state: Running
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v2beta1
+    kind: MPIJob
+    metadata:
+      creationTimestamp: "2026-09-08T20:48:19Z"
+      generation: 1
+      name: karta-e2e-mpi-failed
+      namespace: test-zzhrw
+      uid: 75a18630-80ec-4131-9c92-c094cccdc08d
+    spec:
+      launcherCreationPolicy: AtStartup
+      mpiImplementation: OpenMPI
+      mpiReplicaSpecs:
+        Launcher:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - "false"
+                image: busybox:1.36
+                name: mpi-launcher
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+        Worker:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - sleep
+                - infinity
+                image: busybox:1.36
+                name: mpi-worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runLauncherAsWorker: false
+      runPolicy:
+        backoffLimit: 0
+        cleanPodPolicy: None
+        suspend: false
+      slotsPerWorker: 1
+      sshAuthMountPath: /root/.ssh
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-08T20:48:19Z"
+        lastUpdateTime: "2026-09-08T20:48:19Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is created.
+        reason: MPIJobCreated
+        status: "True"
+        type: Created
+      - lastTransitionTime: "2026-09-08T20:48:20Z"
+        lastUpdateTime: "2026-09-08T20:48:20Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is running.
+        reason: MPIJobRunning
+        status: "True"
+        type: Running
+      replicaStatuses:
+        Launcher:
+          failed: 1
+        Worker:
+          active: 1
+      startTime: "2026-09-08T20:48:19Z"
+  phases:
+  - Running
+  resourceVersion: "57528"
+  state: Running
+- kind: STATE
+  object:
+    apiVersion: kubeflow.org/v2beta1
+    kind: MPIJob
+    metadata:
+      creationTimestamp: "2026-09-08T20:48:19Z"
+      generation: 1
+      name: karta-e2e-mpi-failed
+      namespace: test-zzhrw
+      uid: 75a18630-80ec-4131-9c92-c094cccdc08d
+    spec:
+      launcherCreationPolicy: AtStartup
+      mpiImplementation: OpenMPI
+      mpiReplicaSpecs:
+        Launcher:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - "false"
+                image: busybox:1.36
+                name: mpi-launcher
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+        Worker:
+          replicas: 1
+          template:
+            spec:
+              containers:
+              - command:
+                - sleep
+                - infinity
+                image: busybox:1.36
+                name: mpi-worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+      runLauncherAsWorker: false
+      runPolicy:
+        backoffLimit: 0
+        cleanPodPolicy: None
+        suspend: false
+      slotsPerWorker: 1
+      sshAuthMountPath: /root/.ssh
+    status:
+      completionTime: "2026-09-08T20:48:23Z"
+      conditions:
+      - lastTransitionTime: "2026-09-08T20:48:19Z"
+        lastUpdateTime: "2026-09-08T20:48:19Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is created.
+        reason: MPIJobCreated
+        status: "True"
+        type: Created
+      - lastTransitionTime: "2026-09-08T20:48:20Z"
+        lastUpdateTime: "2026-09-08T20:48:20Z"
+        message: MPIJob test-zzhrw/karta-e2e-mpi-failed is running.
+        reason: MPIJobRunning
+        status: "False"
+        type: Running
+      - lastTransitionTime: "2026-09-08T20:48:23Z"
+        lastUpdateTime: "2026-09-08T20:48:23Z"
+        message: Job has reached the specified backoff limit
+        reason: BackoffLimitExceeded
+        status: "True"
+        type: Failed
+      replicaStatuses:
+        Launcher:
+          failed: 1
+        Worker: {}
+      startTime: "2026-09-08T20:48:19Z"
+  phases:
+  - Failed
+  resourceVersion: "57538"
+  state: Failed
+flow: failed
+kartaFile: docs/catalog/kubeflow-org-mpijob-v2beta1.yaml
+kartaName: kubeflow-org-mpijob-v2beta1
+operator: kubeflow
+result:
+  succeeded: true
+schemaVersion: 1
+summary:
+- amount: 2
+  phases:
+  - Undefined
+- amount: 3
+  phases:
+  - Running
+- amount: 1
+  phases:
+  - Failed
+version: v1.9.0+mpiv0.8.2
+want: Failed

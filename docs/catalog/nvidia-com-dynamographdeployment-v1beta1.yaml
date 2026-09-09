@@ -16,9 +16,10 @@ spec:
         phaseDefinition:
           path: .status.state
         statusMappings:
-          initializing:
-            - byPhase: initializing
+          pending:
             - byPhase: pending
+          progressing:
+            - byPhase: initializing
           running:
             - byPhase: successful
           failed:

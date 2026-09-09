@@ -34,16 +34,17 @@ func Jobset() *v1alpha1.Karta {
 							ReasonFieldName:  ptr.To("reason"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
-								// Some replicatedJobs are active but none are ready yet.
-								// Guard against a null replicatedJobsStatus before the JobSet
-								// controller initializes status.
-								Expression:     "(.status.replicatedJobsStatus // []) | any(.active > 0 and (.ready // 0) == 0) and all(.failed == 0)",
+							Progressing: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
+								// Pods created, none ready yet: the window between the jobs starting and
+								// the first pod coming up.
+								Expression:     "(.status.replicatedJobsStatus // []) | any((.active // 0) > 0) and all((.ready // 0) == 0)",
 								ExpectedResult: "true",
 							}}},
 							Running: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
-								// Total ready across all replicatedJobs equals total expected replicas.
-								Expression:     "(.status.replicatedJobsStatus // []) | any(.ready > 0 and .active > 0) and all(.failed == 0)",
+								// Working: at least one replicatedJob has active or ready pods and none
+								// have failed. Reading either count (not both) keeps the state stable
+								// while the controller briefly flaps ready to 0 mid-run.
+								Expression:     "(.status.replicatedJobsStatus // []) | any((.active // 0) > 0 or (.ready // 0) > 0) and all((.failed // 0) == 0)",
 								ExpectedResult: "true",
 							}}},
 							Completed: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Completed", Status: ptr.To("True")}}}},

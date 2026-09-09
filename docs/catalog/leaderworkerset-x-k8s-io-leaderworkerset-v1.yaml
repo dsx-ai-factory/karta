@@ -19,7 +19,7 @@ spec:
           statusFieldName: status
           messageFieldName: message
         statusMappings:
-          initializing:
+          progressing:
             - byConditions:
                 - type: Progressing
                   status: "True"
@@ -29,11 +29,6 @@ spec:
             - byConditions:
                 - type: Available
                   status: "True"
-                  reason: AllGroupsReady
-                - type: Progressing
-                  status: "False"
-                - type: UpdateInProgress
-                  status: "False"
             - byExpression:
                 expression: (.status.replicas // 0) > 0 and .status.readyReplicas == .status.replicas and .status.updatedReplicas == .status.replicas
                 expectedResult: "true"

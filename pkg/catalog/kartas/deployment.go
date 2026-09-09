@@ -35,7 +35,7 @@ func Deployment() *v1alpha1.Karta {
 							ReasonFieldName:  ptr.To("reason"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
+							Progressing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
 								{Type: "Progressing", Status: ptr.To("True")},
 								{Type: "Available", Status: ptr.To("False")},
 							}}},

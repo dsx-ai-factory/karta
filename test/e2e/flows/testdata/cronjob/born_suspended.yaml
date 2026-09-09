@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# A CronJob created suspended (spec.suspend=true). It never schedules, so this is the one
+# suspended shape the suspend action cannot produce: no lastScheduleTime, no Job history.
+# The Karta library reads it as Suspended. A distinct name keeps it from colliding with
+# the other CronJob flows.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: karta-e2e-cronjob-born-suspended
+  namespace: default
+spec:
+  schedule: "0 0 1 1 *"
+  suspend: true
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: worker
+              image: busybox:1.36
+              command: ["true"]
+              resources:
+                requests: {cpu: 50m, memory: 32Mi}

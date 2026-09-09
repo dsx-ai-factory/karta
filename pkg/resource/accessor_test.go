@@ -742,10 +742,10 @@ var _ = Describe("Accessor", func() {
 				Expect(result.MatchedStatuses).To(ConsistOf(v1alpha1.RunningStatus))
 			})
 
-			It("should match Initializing status", func() {
+			It("should match Progressing status", func() {
 				reactorKarta := types.ReactorKarta()
 				reactorKarta.Spec.StructureDefinition.RootComponent.StatusDefinition.StatusMappings = v1alpha1.StatusMappings{
-					Initializing: []v1alpha1.StatusMatcher{
+					Progressing: []v1alpha1.StatusMatcher{
 						{
 							ByConditions: []v1alpha1.ExpectedCondition{
 								{Type: "Initialized", Status: ptr.To("True")},
@@ -763,7 +763,7 @@ var _ = Describe("Accessor", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result).NotTo(BeNil())
-				Expect(result.MatchedStatuses).To(ConsistOf(v1alpha1.InitializingStatus))
+				Expect(result.MatchedStatuses).To(ConsistOf(v1alpha1.ProgressingStatus))
 			})
 
 			It("should match Running status", func() {
@@ -986,7 +986,7 @@ var _ = Describe("Accessor", func() {
 							ByPhase: "running",
 						},
 					},
-					Initializing: []v1alpha1.StatusMatcher{
+					Progressing: []v1alpha1.StatusMatcher{
 						{
 							ByConditions: []v1alpha1.ExpectedCondition{
 								{Type: "Ready", Status: ptr.To("True")},
@@ -1000,7 +1000,7 @@ var _ = Describe("Accessor", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result).NotTo(BeNil())
-				Expect(result.MatchedStatuses).To(ConsistOf(v1alpha1.RunningStatus, v1alpha1.InitializingStatus))
+				Expect(result.MatchedStatuses).To(ConsistOf(v1alpha1.RunningStatus, v1alpha1.ProgressingStatus))
 			})
 
 			It("should not match when condition is missing", func() {

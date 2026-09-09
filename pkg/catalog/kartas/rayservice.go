@@ -30,9 +30,9 @@ func RayService() *v1alpha1.Karta {
 							MessageFieldName: ptr.To("message"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Running:      []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("True")}}}},
-							Initializing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("False"), Reason: ptr.To("Initializing")}}}},
-							Degraded:     []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("False"), Reason: ptr.To("ZeroServeEndpoints")}}}},
+							Running:     []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("True")}}}},
+							Progressing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("False"), Reason: ptr.To("Initializing")}}}},
+							Degraded:    []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("False"), Reason: ptr.To("ZeroServeEndpoints")}}}},
 							Failed: []v1alpha1.StatusMatcher{
 								{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("False"), Reason: ptr.To("InitializingTimeout")}}},
 								{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("False"), Reason: ptr.To("ValidationFailed")}}},

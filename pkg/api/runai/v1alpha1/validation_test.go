@@ -452,7 +452,7 @@ var _ = Describe("KartaValidator", func() {
 
 			It("should validate ByExpression in multiple status matchers", func() {
 				kartaWithJQPaths.Spec.StructureDefinition.RootComponent.StatusDefinition.StatusMappings = StatusMappings{
-					Initializing: []StatusMatcher{
+					Progressing: []StatusMatcher{
 						{ByExpression: &ExpressionMatcher{Expression: ".status.phase == \"Pending\"", ExpectedResult: "true"}},
 					},
 					Running: []StatusMatcher{
@@ -473,7 +473,7 @@ var _ = Describe("KartaValidator", func() {
 
 			It("should fail when one ByExpression in multiple matchers is invalid", func() {
 				kartaWithJQPaths.Spec.StructureDefinition.RootComponent.StatusDefinition.StatusMappings = StatusMappings{
-					Initializing: []StatusMatcher{
+					Progressing: []StatusMatcher{
 						{ByExpression: &ExpressionMatcher{Expression: ".status.phase == \"Pending\"", ExpectedResult: "true"}},
 					},
 					Running: []StatusMatcher{
@@ -495,18 +495,19 @@ var _ = Describe("KartaValidator", func() {
 	Describe("StatusMappings.Entries", func() {
 		It("should return all status-to-matchers pairs", func() {
 			mappings := StatusMappings{
-				Running:      []StatusMatcher{{ByPhase: "Running"}},
-				Failed:       []StatusMatcher{{ByPhase: "Failed"}},
-				Completed:    []StatusMatcher{{ByPhase: "Completed"}},
-				Initializing: []StatusMatcher{{ByPhase: "Initializing"}},
-				Degraded:     []StatusMatcher{{ByPhase: "Degraded"}},
-				Suspended:    []StatusMatcher{{ByPhase: "Suspended"}},
-				Resuming:     []StatusMatcher{{ByPhase: "Resuming"}},
-				Suspending:   []StatusMatcher{{ByPhase: "Suspending"}},
+				Running:     []StatusMatcher{{ByPhase: "Running"}},
+				Failed:      []StatusMatcher{{ByPhase: "Failed"}},
+				Completed:   []StatusMatcher{{ByPhase: "Completed"}},
+				Pending:     []StatusMatcher{{ByPhase: "Pending"}},
+				Progressing: []StatusMatcher{{ByPhase: "Progressing"}},
+				Degraded:    []StatusMatcher{{ByPhase: "Degraded"}},
+				Suspended:   []StatusMatcher{{ByPhase: "Suspended"}},
+				Resuming:    []StatusMatcher{{ByPhase: "Resuming"}},
+				Suspending:  []StatusMatcher{{ByPhase: "Suspending"}},
 			}
 
 			entries := mappings.Entries()
-			Expect(entries).To(HaveLen(8))
+			Expect(entries).To(HaveLen(9))
 
 			statusToMatchers := make(map[ResourceStatus][]StatusMatcher)
 			for _, entry := range entries {
@@ -519,8 +520,10 @@ var _ = Describe("KartaValidator", func() {
 			Expect(statusToMatchers[FailedStatus]).To(Equal(mappings.Failed))
 			Expect(statusToMatchers).To(HaveKey(CompletedStatus))
 			Expect(statusToMatchers[CompletedStatus]).To(Equal(mappings.Completed))
-			Expect(statusToMatchers).To(HaveKey(InitializingStatus))
-			Expect(statusToMatchers[InitializingStatus]).To(Equal(mappings.Initializing))
+			Expect(statusToMatchers).To(HaveKey(PendingStatus))
+			Expect(statusToMatchers[PendingStatus]).To(Equal(mappings.Pending))
+			Expect(statusToMatchers).To(HaveKey(ProgressingStatus))
+			Expect(statusToMatchers[ProgressingStatus]).To(Equal(mappings.Progressing))
 			Expect(statusToMatchers).To(HaveKey(DegradedStatus))
 			Expect(statusToMatchers[DegradedStatus]).To(Equal(mappings.Degraded))
 			Expect(statusToMatchers).To(HaveKey(SuspendedStatus))
@@ -534,7 +537,7 @@ var _ = Describe("KartaValidator", func() {
 		It("should return entries with nil matchers for empty mappings", func() {
 			mappings := StatusMappings{}
 			entries := mappings.Entries()
-			Expect(entries).To(HaveLen(8))
+			Expect(entries).To(HaveLen(9))
 			for _, entry := range entries {
 				Expect(entry.Matchers).To(BeNil())
 			}

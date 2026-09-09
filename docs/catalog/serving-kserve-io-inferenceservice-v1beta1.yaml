@@ -19,6 +19,10 @@ spec:
           statusFieldName: status
           messageFieldName: message
         statusMappings:
+          progressing:
+            - byConditions:
+                - type: Ready
+                  status: Unknown
           running:
             - byConditions:
                 - type: PredictorReady

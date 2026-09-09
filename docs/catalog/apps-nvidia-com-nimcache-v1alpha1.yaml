@@ -27,14 +27,12 @@ spec:
           messageFieldName: message
           reasonFieldName: reason
         statusMappings:
-          initializing:
+          pending:
             - byPhase: Pending
             - byPhase: NotReady
+          progressing:
             - byPhase: PVC-Created
             - byPhase: Started
-            - byConditions:
-                - type: NIM_CACHE_JOB_CREATED
-                  status: "True"
           running:
             - byPhase: InProgress
           completed:

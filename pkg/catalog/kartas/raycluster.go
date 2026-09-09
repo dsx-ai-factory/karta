@@ -32,6 +32,7 @@ func Raycluster() *v1alpha1.Karta {
 						StatusMappings: v1alpha1.StatusMappings{
 							Running: []v1alpha1.StatusMatcher{{ByPhase: "ready"}},
 							Failed:  []v1alpha1.StatusMatcher{{ByPhase: "failed"}},
+							// Converging toward ready: not suspended and state not yet "ready" or
 							Suspended: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
 								Expression:     `.spec.suspend == true and (.status.state == "suspended" or (.status.state | not))`,
 								ExpectedResult: "true",
