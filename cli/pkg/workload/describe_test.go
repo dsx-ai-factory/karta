@@ -74,7 +74,7 @@ func livePod(name, node string, labels map[string]string, gpus string) corev1.Po
 	}
 }
 
-// unschedulablePod is the failing pod truncation must never hide.
+// unschedulablePod is a pod that never got a node, so its node reads as null.
 func unschedulablePod(name string, labels map[string]string) corev1.Pod {
 	return corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "ml-team", Labels: labels},
@@ -227,8 +227,7 @@ spec:
 		Expect(view.Components[0].Replicas).To(Equal(Replicas{}))
 	})
 
-	// A multi-instance component renders one child per instance, named by its
-	// instance key rather than by the component.
+	// Each child is named by its instance key, not by the component.
 	It("splits a multi-instance component into one child per instance", func() {
 		view := describeFixture("dynamographdeployment.yaml")
 

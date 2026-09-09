@@ -136,7 +136,7 @@ func ResolveDescribe(
 		if err != nil {
 			return nil, err
 		}
-		component, err := buildComponent(ctx, root.Name(), kindOf(root.Kind()), defs[root.Name()], instances, pods, defs)
+		component, err := buildPodBearingComponent(ctx, root.Name(), kindOf(root.Kind()), instances, pods, defs)
 		if err != nil {
 			return nil, fmt.Errorf("build root component: %w", err)
 		}
@@ -144,7 +144,7 @@ func ResolveDescribe(
 	}
 
 	for _, node := range workloadTree.Children {
-		component, err := buildNode(ctx, node, defs, pods)
+		component, err := buildComponent(ctx, node, defs, pods)
 		if err != nil {
 			return nil, fmt.Errorf("build component %q: %w", node.Name, err)
 		}
@@ -186,9 +186,9 @@ func indexComponentDefs(karta *v1alpha1.Karta) map[string]v1alpha1.ComponentDefi
 	return defs
 }
 
-// buildNode renders one ComponentNode: a grouping component only recurses, a
-// pod-bearing one claims the pods its ComponentTypeSelector accepts.
-func buildNode(
+// buildComponent renders one ComponentNode and the subtree under it, choosing
+// between the two kinds of component by whether the node carries pods.
+func buildComponent(
 	ctx context.Context, node tree.ComponentNode, defs map[string]v1alpha1.ComponentDefinition, pods []corev1.Pod,
 ) (ComponentView, error) {
 	kind := kindOf(node.Kind)
@@ -204,9 +204,9 @@ func buildNode(
 
 	if !isMultiInstance(node.Instances) {
 		if node.HasPodDefinition {
-			return buildComponent(ctx, node.Name, kind, def, node.Instances, claimed, defs)
+			return buildPodBearingComponent(ctx, node.Name, kind, node.Instances, claimed, defs)
 		}
-		return buildGrouping(ctx, node.Name, kind, node.Instances, claimed, defs)
+		return buildGroupingComponent(ctx, node.Name, kind, node.Instances, claimed, defs)
 	}
 
 	// A grouping component takes this path too: it holds no pods itself, but its
@@ -223,9 +223,9 @@ func buildNode(
 
 		var child ComponentView
 		if node.HasPodDefinition {
-			child, err = buildComponent(ctx, label, kind, def, one, scoped, defs)
+			child, err = buildPodBearingComponent(ctx, label, kind, one, scoped, defs)
 		} else {
-			child, err = buildGrouping(ctx, label, kind, one, scoped, defs)
+			child, err = buildGroupingComponent(ctx, label, kind, one, scoped, defs)
 		}
 		if err != nil {
 			return ComponentView{}, err
@@ -237,9 +237,8 @@ func buildNode(
 	return parent, nil
 }
 
-// buildGrouping renders a component that owns no pods of its own: it carries
-// only its descendants and their roll-up.
-func buildGrouping(
+// buildGroupingComponent renders a component that owns no pods, only descendants.
+func buildGroupingComponent(
 	ctx context.Context,
 	name, kind string,
 	instances []tree.InstanceNode,
@@ -249,7 +248,7 @@ func buildGrouping(
 	component := ComponentView{Name: name, Kind: kind}
 	for _, instance := range instances {
 		for _, node := range instance.Children {
-			child, err := buildNode(ctx, node, defs, pods)
+			child, err := buildComponent(ctx, node, defs, pods)
 			if err != nil {
 				return ComponentView{}, err
 			}
@@ -260,12 +259,11 @@ func buildGrouping(
 	return component, nil
 }
 
-// buildComponent renders a pod-bearing component from the pods already matched
-// to it, plus the desired scale and per-replica request read off its spec.
-func buildComponent(
+// buildPodBearingComponent renders a component that carries pods. pods must
+// already be matched to it: the scale and per-replica request come off the spec.
+func buildPodBearingComponent(
 	ctx context.Context,
 	name, kind string,
-	def v1alpha1.ComponentDefinition,
 	instances []tree.InstanceNode,
 	pods []corev1.Pod,
 	defs map[string]v1alpha1.ComponentDefinition,
@@ -281,7 +279,7 @@ func buildComponent(
 		}
 
 		for _, node := range instance.Children {
-			child, err := buildNode(ctx, node, defs, pods)
+			child, err := buildComponent(ctx, node, defs, pods)
 			if err != nil {
 				return ComponentView{}, err
 			}
@@ -294,8 +292,8 @@ func buildComponent(
 	return component, nil
 }
 
-// attach records the pods matched to a component: one row each, plus the counts
-// and nodes derived from them.
+// attach records the pods matched to a component, name-ordered so a re-run
+// reads the same.
 func (c *ComponentView) attach(pods []corev1.Pod) {
 	for i := range pods {
 		pod := &pods[i]
@@ -450,8 +448,8 @@ func filterByInstance(
 	return matched, nil
 }
 
-// replicasOf reports the desired replica count. A component declaring only a
-// scaling envelope falls back to its minimum, then to one.
+// replicasOf reports the desired replica count, defaulting to one for a
+// component that declares only a scaling envelope.
 func replicasOf(scale *resource.Scale) int32 {
 	switch {
 	case scale == nil:
