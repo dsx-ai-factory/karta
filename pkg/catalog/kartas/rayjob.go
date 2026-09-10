@@ -70,14 +70,14 @@ func Rayjob() *v1alpha1.Karta {
 						Kind:     &v1alpha1.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"},
 						OwnerRef: ptr.To("rayjob"),
 						SpecDefinition: &v1alpha1.SpecDefinition{
-							PodTemplateSpecPath: ptr.To(".spec.rayClusterSpec.workerGroupSpecs[].template"),
+							PodTemplateSpecPath: ptr.To(".spec.rayClusterSpec.workerGroupSpecs[]?.template"),
 						},
 						ScaleDefinition: &v1alpha1.ScaleDefinition{
-							ReplicasPath:    ptr.To(".spec.rayClusterSpec.workerGroupSpecs[].replicas // 1"),
-							MinReplicasPath: ptr.To(".spec.rayClusterSpec.workerGroupSpecs[].minReplicas"),
-							MaxReplicasPath: ptr.To(".spec.rayClusterSpec.workerGroupSpecs[].maxReplicas"),
+							ReplicasPath:    ptr.To(".spec.rayClusterSpec.workerGroupSpecs[]? | (.replicas // 1)"),
+							MinReplicasPath: ptr.To(".spec.rayClusterSpec.workerGroupSpecs[]?.minReplicas"),
+							MaxReplicasPath: ptr.To(".spec.rayClusterSpec.workerGroupSpecs[]?.maxReplicas"),
 						},
-						InstanceIdPath: ptr.To(".spec.rayClusterSpec.workerGroupSpecs[].groupName"),
+						InstanceIdPath: ptr.To(".spec.rayClusterSpec.workerGroupSpecs[]?.groupName"),
 						PodSelector: &v1alpha1.PodSelector{
 							ComponentTypeSelector: &v1alpha1.ComponentTypeSelector{
 								KeyPath: `.metadata.labels["ray.io/node-type"]`,

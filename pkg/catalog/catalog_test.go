@@ -4,6 +4,7 @@
 package catalog
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -11,11 +12,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
 
 	v1alpha1 "github.com/run-ai/karta/pkg/api/runai/v1alpha1"
 	"github.com/run-ai/karta/pkg/catalog/kartas"
+	"github.com/run-ai/karta/pkg/resource"
 )
 
 // catalogDir returns the docs/catalog directory relative to this test file.
@@ -167,4 +170,69 @@ var _ = Describe("catalog files", func() {
 			Expect(v1alpha1.NewKartaValidator(&k).Validate()).To(Succeed(), path)
 		}
 	})
+})
+
+// Worker groups are optional in every Ray kind, so extraction over the worker
+// component must yield zero instances for a manifest without them instead of
+// failing on iterating a missing array.
+var _ = Describe("Ray kartas", func() {
+	type rayCase struct {
+		kind        string
+		clusterSpec []string
+	}
+	cases := []rayCase{
+		{kind: "RayJob", clusterSpec: []string{"spec", "rayClusterSpec"}},
+		{kind: "RayCluster", clusterSpec: []string{"spec"}},
+		{kind: "RayService", clusterSpec: []string{"spec", "rayClusterConfig"}},
+	}
+
+	extractWorkerInstances := func(kind string, obj *unstructured.Unstructured) (map[string]resource.ExtractedInstance, error) {
+		k, err := Get(schema.GroupVersionKind{Group: "ray.io", Version: "v1", Kind: kind})
+		Expect(err).NotTo(HaveOccurred())
+		worker, err := resource.NewComponentFactoryFromObject(k, obj).GetComponent("worker")
+		Expect(err).NotTo(HaveOccurred())
+		return worker.GetExtractedInstances(context.Background())
+	}
+
+	newManifest := func(c rayCase, workerGroups any) *unstructured.Unstructured {
+		obj := &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": "ray.io/v1",
+			"kind":       c.kind,
+			"metadata":   map[string]any{"name": "test", "namespace": "default"},
+			"spec":       map[string]any{},
+		}}
+		head := map[string]any{"template": map[string]any{"spec": map[string]any{}}}
+		Expect(unstructured.SetNestedField(obj.Object, head, append(c.clusterSpec, "headGroupSpec")...)).To(Succeed())
+		if workerGroups != nil {
+			Expect(unstructured.SetNestedField(obj.Object, workerGroups, append(c.clusterSpec, "workerGroupSpecs")...)).To(Succeed())
+		}
+		return obj
+	}
+
+	for _, c := range cases {
+		It("extracts zero worker instances when "+c.kind+" has no worker groups", func() {
+			instances, err := extractWorkerInstances(c.kind, newManifest(c, nil))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(instances).To(BeEmpty())
+		})
+
+		It("extracts zero worker instances when "+c.kind+" worker groups are empty", func() {
+			instances, err := extractWorkerInstances(c.kind, newManifest(c, []any{}))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(instances).To(BeEmpty())
+		})
+
+		It("extracts worker instances by group name for "+c.kind, func() {
+			group := map[string]any{
+				"groupName": "gpu-worker",
+				"replicas":  int64(2),
+				"template":  map[string]any{"spec": map[string]any{}},
+			}
+			instances, err := extractWorkerInstances(c.kind, newManifest(c, []any{group}))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(instances).To(HaveKey("gpu-worker"))
+			Expect(instances["gpu-worker"].Scale).NotTo(BeNil())
+			Expect(*instances["gpu-worker"].Scale.Replicas).To(Equal(int32(2)))
+		})
+	}
 })
