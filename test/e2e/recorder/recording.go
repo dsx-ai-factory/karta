@@ -185,3 +185,9 @@ func (r *Reader) Object() *unstructured.Unstructured {
 }
 
 func (r *Reader) Recording() Recording { return r.rec }
+
+// Len is the number of state frames in the recording.
+func (r *Reader) Len() int { return len(r.stateEvents) }
+
+// Pos is the zero-based index of the current frame.
+func (r *Reader) Pos() int { return r.pos }
