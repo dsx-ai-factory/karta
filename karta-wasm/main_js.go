@@ -18,6 +18,7 @@ func main() {
 func registerKartaAPI() {
 	kartaAPI := js.Global().Get("Object").New()
 	kartaAPI.Set("buildTree", js.FuncOf(jsBuildTree))
+	kartaAPI.Set("evaluatePhases", js.FuncOf(jsEvaluatePhases))
 	kartaAPI.Set("listCatalog", js.FuncOf(jsListCatalog))
 	js.Global().Set("karta", kartaAPI)
 }

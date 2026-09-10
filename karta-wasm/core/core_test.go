@@ -6,8 +6,10 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"testing"
 
+	"github.com/run-ai/karta/pkg/api/runai/v1alpha1"
 	"github.com/run-ai/karta/test/types"
 )
 
@@ -60,6 +62,62 @@ func TestBuildTree(t *testing.T) {
 	}
 	if workloadTree == nil {
 		t.Fatal("expected a tree")
+	}
+}
+
+func TestEvaluatePhases(t *testing.T) {
+	phases, err := EvaluatePhases(context.Background(),
+		mustMarshalJSON(t, types.ReactorKarta()), mustMarshalJSON(t, types.NewReactorObject()))
+	if err != nil {
+		t.Fatalf("EvaluatePhases() error = %v", err)
+	}
+	if len(phases) != 1 || phases[0] != "Running" {
+		t.Fatalf("expected phases = [Running], got %#v", phases)
+	}
+}
+
+func TestEvaluatePhasesRejectsInvalidJSON(t *testing.T) {
+	if _, err := EvaluatePhases(context.Background(), "not json",
+		mustMarshalJSON(t, types.NewReactorObject())); err == nil {
+		t.Fatal("expected an error for malformed definition JSON")
+	}
+}
+
+// EvaluatePhases reaches the root status without building the tree, so it
+// duplicates what BuildTree does with that status. This pins the two together.
+func TestEvaluatePhasesMatchesBuildTree(t *testing.T) {
+	for _, testCase := range []struct {
+		name       string
+		definition *v1alpha1.Karta
+		workload   any
+	}{
+		{"reactor", types.ReactorKarta(), types.NewReactorObject()},
+		{"pyflow", types.PyFlowKarta(), types.NewPyFlowObject()},
+		{"milvus", types.MilvusKarta(), types.NewMilvusObject()},
+		{"jobgroup", types.JobGroupKarta(), types.NewJobGroupObject()},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			definitionJSON := mustMarshalJSON(t, testCase.definition)
+			workloadJSON := mustMarshalJSON(t, testCase.workload)
+
+			phases, err := EvaluatePhases(context.Background(), definitionJSON, workloadJSON)
+			if err != nil {
+				t.Fatalf("EvaluatePhases() error = %v", err)
+			}
+
+			workloadTree, err := BuildTree(context.Background(), definitionJSON, workloadJSON)
+			if err != nil {
+				t.Fatalf("BuildTree() error = %v", err)
+			}
+			var expectedPhases []string
+			if workloadTree.Status != nil {
+				expectedPhases = workloadTree.Status.Phases
+			}
+
+			if !slices.Equal(phases, expectedPhases) {
+				t.Errorf("phases = %#v, BuildTree's Status.Phases = %#v", phases, expectedPhases)
+			}
+		})
 	}
 }
 

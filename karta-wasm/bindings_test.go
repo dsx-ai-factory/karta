@@ -54,6 +54,32 @@ func TestJSBuildTreeRejectsWrongArgumentCount(t *testing.T) {
 	}
 }
 
+func TestJSEvaluatePhases(t *testing.T) {
+	definitionJSON := mustMarshalJSON(t, types.ReactorKarta())
+	workloadJSON := mustMarshalJSON(t, types.NewReactorObject())
+
+	resultEnvelope := jsEvaluatePhases(js.Value{}, []js.Value{js.ValueOf(definitionJSON), js.ValueOf(workloadJSON)}).(js.Value)
+	if !resultEnvelope.Get("error").IsNull() {
+		t.Fatalf("unexpected error: %s", resultEnvelope.Get("error").String())
+	}
+
+	var phases []string
+	if err := json.Unmarshal([]byte(resultEnvelope.Get("data").String()), &phases); err != nil {
+		t.Fatalf("failed to unmarshal phases: %v", err)
+	}
+	if len(phases) != 1 || phases[0] != "Running" {
+		t.Fatalf("expected phases = [Running], got %#v", phases)
+	}
+}
+
+func TestJSEvaluatePhasesRejectsWrongArgumentCount(t *testing.T) {
+	resultEnvelope := jsEvaluatePhases(js.Value{}, nil).(js.Value)
+
+	if resultEnvelope.Get("error").IsNull() {
+		t.Fatal("expected an error for a missing argument")
+	}
+}
+
 func TestJSListCatalog(t *testing.T) {
 	resultEnvelope := jsListCatalog(js.Value{}, nil).(js.Value)
 	if !resultEnvelope.Get("error").IsNull() {
