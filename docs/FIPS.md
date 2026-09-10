@@ -7,18 +7,19 @@ The Karta operator image is built with Go's native [FIPS 140-3
 support](https://go.dev/doc/security/fips140) (`GOFIPS140=v1.0.0`), so all
 `crypto/*` operations are served by the CMVP-validated Go Cryptographic Module.
 This is a single image: the FIPS module is always linked in, and the
-`fipsMode` chart value only controls how strictly it is enforced at runtime.
+`global.fipsMode` chart value only controls how strictly it is enforced at runtime.
 There is no separate `-fips` image variant.
 
 ## Setting the mode
 
 ```yaml
-fipsMode: "off"
+global:
+  fipsMode: "off"
 ```
 
-`fipsMode` sets `GODEBUG=fips140=<mode>` on the operator container. This is a
+`global.fipsMode` sets `GODEBUG=fips140=<mode>` on the operator container. This is a
 runtime switch, not a build-time one: `GOFIPS140=v1.0.0` always links the FIPS
-module into the operator image, regardless of `fipsMode`. Valid values:
+module into the operator image, regardless of `global.fipsMode`. Valid values:
 
 - `off` (default) - FIPS mode disabled at runtime; the module is present in
   the binary but not engaged, and no self-tests run.
@@ -29,7 +30,7 @@ module into the operator image, regardless of `fipsMode`. Valid values:
 
 ```sh
 helm upgrade --install karta oci://ghcr.io/run-ai/karta/karta \
-  -n karta-system --create-namespace --set fipsMode=only
+  -n karta-system --create-namespace --set global.fipsMode=only
 ```
 
 ## `only` mode is a testing aid, not a production mode

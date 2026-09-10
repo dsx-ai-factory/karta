@@ -130,7 +130,7 @@ helm-lint: ## Lint the helm chart
 .PHONY: helm-validate
 helm-validate: ## Validate the helm chart renders
 	helm template $(KARTA_CHART_DIR)
-	helm template $(KARTA_CHART_DIR) --set fipsMode=only
+	helm template $(KARTA_CHART_DIR) --set global.fipsMode=only
 
 ##@ Air-gap
 
