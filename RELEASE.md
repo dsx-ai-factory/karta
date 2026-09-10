@@ -20,8 +20,9 @@ release notes. Consumers should pin to a specific released version.
 
 Karta releases on an as-needed basis rather than a fixed calendar. A release is
 cut when a meaningful set of changes has accumulated on `main`, or when a fix needs
-to ship. There is no separate release branch while the project is pre-1.0; releases
-are tagged from `main`.
+to ship. Minor releases are tagged from `main`. Each minor line then gets a release
+branch (`v0.1`, `v0.2`), and patch releases are tagged from that branch, so patch
+fixes ship without waiting on `main`.
 
 ## Who can cut a release
 
@@ -33,12 +34,17 @@ built by CI from the pushed tag, never from a local machine.
 The full steps live in [CONTRIBUTING.md](CONTRIBUTING.md#versioning). In short, a
 maintainer pushes a `vX.Y.Z` tag, which triggers the `push-artifacts` workflow to
 publish the Helm chart to GHCR and create the corresponding GitHub Release. No
-release-prep pull request or `Chart.yaml` bump is required; the tag is the source
-of truth.
+`Chart.yaml` bump is required; the tag is the source of truth for versions.
+
+The one pre-tag step is the changelog: before pushing the tag, add the version's
+entry to [CHANGELOG.md](CHANGELOG.md) so the tagged source archive carries its own
+entry. Conventional Commits make this mechanical (a `git log` pass over the range
+since the previous tag); a generator script is tracked as a follow-up.
 
 ## Release notes and breaking changes
 
-Each GitHub Release includes notes describing what changed. Every breaking change
+The GitHub Release body is written from the version's CHANGELOG.md entry; the
+changelog is the source, the release body is the copy. Every breaking change
 (API field changes, removed or renamed library surface, behavioral changes that
 require consumer action) must be documented in the release notes with migration
 guidance so that downstream consumers can upgrade predictably.

@@ -65,7 +65,7 @@ func NewRootCommand() *cobra.Command {
 	withOutput(cmd, cmd.PersistentFlags(), true)
 	withConfig(cmd)
 
-	cmd.AddCommand(newWorkloadCommand())
+	cmd.AddCommand(newGetCommand())
 	cmd.AddCommand(newDefinitionsCommand(kubeFlags))
 	cmd.AddCommand(newValidateCommand())
 

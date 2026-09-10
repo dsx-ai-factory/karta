@@ -31,7 +31,7 @@ E2E_TIMEOUT=10m caps the whole run, E2E_LABELS passes a raw ginkgo label express
 ## Test
 
 ```sh
-make test                # root unit tests, plus the recorder unit tests (offline, no cluster)
+make test-lib            # library unit tests, plus the recorder unit tests (offline, no cluster)
 make verify-recordings   # fail if any recorded fixture ended with succeeded: false
 ```
 

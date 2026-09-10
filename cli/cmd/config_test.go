@@ -10,6 +10,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
+
+	"github.com/run-ai/karta/cli/pkg/generator"
 )
 
 var _ = Describe("config loading", func() {
@@ -126,6 +128,22 @@ var _ = Describe("config loading", func() {
 			c, err := runWithConfig("--config", cfg, "-o", "yaml", "noop")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.Output).To(Equal("yaml"))
+		})
+
+		// get and definitions register their own -o, which shadows the root's.
+		// A correct Config is not enough; the flag the command reads must carry
+		// the value too.
+		It("reaches a command registering its own output flag", func() {
+			writeFile(cfg, "output: json\n")
+
+			root := NewRootCommand()
+			sub := &cobra.Command{Use: "local", RunE: func(*cobra.Command, []string) error { return nil }}
+			local := withOutput(sub, sub.Flags(), true)
+			root.AddCommand(sub)
+			root.SetArgs([]string{"--config", cfg, "local"})
+
+			Expect(root.Execute()).To(Succeed())
+			Expect(local.Get()).To(Equal(generator.OutputJSON))
 		})
 
 		It("explicit flag at its default value overrides the config file", func() {

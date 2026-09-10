@@ -40,7 +40,7 @@ jobs:
             operator/go.sum
 
       - name: Regenerate generated files
-        run: make generate manifests generate-mocks generate-licenses
+        run: make lib-generate lib-manifests lib-generate-mocks generate-licenses
 
       - name: Check for drift
         id: drift

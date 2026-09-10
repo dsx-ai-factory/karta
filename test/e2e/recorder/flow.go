@@ -40,8 +40,9 @@ type journeyStep struct {
 type ActionType string
 
 const (
-	ActionResume ActionType = "Resume"
-	ActionScale  ActionType = "Scale"
+	ActionSuspend ActionType = "Suspend"
+	ActionResume  ActionType = "Resume"
+	ActionScale   ActionType = "Scale"
 )
 
 // Action is a merge-patch applied to the workload to drive a transition.
@@ -91,13 +92,18 @@ func (f *Flow) terminalState() kartav1alpha1.ResourceStatus { return f.journey[l
 func (f *Flow) client() client.Client { return f.rec.config.Cluster.Client }
 func (f *Flow) log() io.Writer        { return f.rec.config.Log }
 
-// classify returns the furthest-along state the workload matches, judged from its own fields.
-func classify(cr *unstructured.Unstructured, states []namedState) kartav1alpha1.ResourceStatus {
-	// States are declared least- to most-advanced, so the walk runs from the end.
-	for i := len(states) - 1; i >= 0; i-- {
-		if states[i].Match(cr) {
-			return states[i].Name
+// judge returns every state the workload matches, from its own fields, in declaration order (least- to
+// most-advanced). A frame matching nothing is a real gap: it is judged Undefined so the gap stays visible
+// in the walk and the summary, rather than vanishing silently.
+func judge(cr *unstructured.Unstructured, states []namedState) []kartav1alpha1.ResourceStatus {
+	var matched []kartav1alpha1.ResourceStatus
+	for _, s := range states {
+		if s.Match(cr) {
+			matched = append(matched, s.Name)
 		}
 	}
-	return ""
+	if len(matched) == 0 {
+		return []kartav1alpha1.ResourceStatus{kartav1alpha1.UndefinedStatus}
+	}
+	return matched
 }

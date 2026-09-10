@@ -1,39 +1,142 @@
 {
   "skill_name": "add-workload-type",
+  "notes": "Expectations are chosen to separate a skill-guided run from an unaided one. Each expectation records the pass counts measured over 3 runs per configuration in the 2026-08-18 benchmark, as with_skill/without_skill. Expectations marked floor are correctness minimums that both configurations already satisfy where measured; they are kept to catch regressions, not to show a delta. Expectations with a null measured value come from evals that have not been run, so neither their floor nor their discriminating status is established.",
   "evals": [
     {
       "id": 1,
+      "purpose": "Primary discriminator. Argo Workflow is absent from docs/catalog/, so the definition must be authored from scratch.",
       "prompt": "We run Argo Workflows on our cluster and want Karta to understand them. Add support for the Argo Workflow type.",
-      "expected_output": "The agent selects the add-workload-type skill from intent, gathers the Argo facts, and produces a valid Karta definition for argoproj.io/v1alpha1 Workflow with a phase-based status mapping and null-safe jq paths.",
+      "expected_output": "A single Karta definition for argoproj.io/v1alpha1 Workflow, validated with the repository harness and exercised against a CR with predictions written first, with a phase-based status mapping that does not misreport a suspended workflow as Running.",
       "expectations": [
-        "The add-workload-type skill is selected without the user naming it",
-        "The root component declares the full GVK: group argoproj.io, version v1alpha1, kind Workflow",
-        "The root component has a statusDefinition",
-        "Status is mapped from the real .status.phase values (for example Pending, Running, Succeeded, Failed, Error) rather than invented condition types",
-        "Every jq path is absolute and null-safe",
-        "The definition satisfies the skill's validation checklist"
+        {
+          "text": "The add-workload-type skill is selected without the user naming it",
+          "measured": "3/3 vs n/a",
+          "kind": "triggering"
+        },
+        {
+          "text": "The deliverable is a Karta YAML definition only. No Go source file under pkg/catalog/kartas/, no catalog registration, and no hack/e2e module are produced",
+          "measured": "3/3 vs 0/3",
+          "kind": "discriminating"
+        },
+        {
+          "text": "Expected status, replica counts and container names are written to a predictions file before the definition is run, and the run uses --strict",
+          "measured": "3/3 vs 0/3",
+          "kind": "discriminating"
+        },
+        {
+          "text": "The definition is validated with the repository harness, go run ./hack/karta-verify --karta <file>, rather than a purpose-built Go program that calls the library directly",
+          "measured": "3/3 vs 1/3",
+          "kind": "discriminating"
+        },
+        {
+          "text": "A suspended Workflow resolves to Suspended and not Running. Argo leaves .status.phase at Running while .spec.suspend is true, so the running rule must be guarded against .spec.suspend rather than matching byPhase Running alone",
+          "measured": "2/3 vs 0/3",
+          "kind": "discriminating"
+        },
+        {
+          "text": "The root component declares the full GVK group argoproj.io, version v1alpha1, kind Workflow, and has a statusDefinition",
+          "measured": "3/3 vs 3/3",
+          "kind": "floor"
+        },
+        {
+          "text": "Status is mapped from the real .status.phase values (Pending, Running, Succeeded, Failed, Error) rather than invented condition types, and every jq path is absolute and null-safe",
+          "measured": "2/3 vs 2/3",
+          "kind": "floor"
+        }
       ]
     },
     {
       "id": 2,
+      "purpose": "Process regression only. docs/catalog/batch-cronjob-v1.yaml already ships in this repository, so both configurations can find the answer and no content expectation here can discriminate. Retained for the verification-discipline expectations, which do separate.",
       "prompt": "Write a Karta definition for a batch/v1 CronJob. It should report status and expose the pod template.",
-      "expected_output": "A valid Karta definition for batch/v1 CronJob that uses the nested jobTemplate pod-template path, sets exactly one spec pattern per component, and maps status from real fields with null-safe expressions.",
+      "expected_output": "A valid Karta definition for batch/v1 CronJob, verified with the repository harness against sample CRs with predictions written first.",
       "expectations": [
-        "Exactly one specDefinition pattern is set on each component",
-        "The pod template path is .spec.jobTemplate.spec.template, not .spec.template",
-        "Every jq path is null-safe and evaluated against the workload object, not a pod",
-        "Status mapping references real fields such as .spec.suspend or .status via byExpression",
-        "The definition passes the KartaValidator and the skill's validation checklist"
+        {
+          "text": "The definition is validated with go run ./hack/karta-verify --karta <file> and exercised against sample CronJobs with --strict, with predictions written before the run",
+          "measured": "3/3 vs 0/3",
+          "kind": "discriminating"
+        },
+        {
+          "text": "podTemplateSpecPath is declared on the root cronjob component, matching the convention in docs/catalog/batch-cronjob-v1.yaml",
+          "measured": "3/3 vs 2/3",
+          "kind": "discriminating"
+        },
+        {
+          "text": "The answer states which parts remain unproven, for example that the sample CRs are synthetic or that suspend writes were not exercised",
+          "measured": "3/3 vs 0/3",
+          "kind": "discriminating"
+        },
+        {
+          "text": "The pod template path is .spec.jobTemplate.spec.template, not .spec.template, and exactly one specDefinition pattern is set on each component",
+          "measured": "3/3 vs 3/3",
+          "kind": "floor"
+        },
+        {
+          "text": "Status is mapped with byExpression over real fields such as .spec.suspend and .status.active, and every jq path is null-safe and evaluated against the workload object",
+          "measured": "3/3 vs 3/3",
+          "kind": "floor"
+        }
       ]
     },
     {
       "id": 3,
+      "purpose": "Over-triggering guard. Both configurations answer this correctly by construction, so it cannot show a delta. It fails loudly if the skill starts driving non-authoring requests.",
       "prompt": "What does the Karta offline quickstart print when I run it, and where is its source?",
-      "expected_output": "A direct answer that describes the quickstart output and points at docs/examples/quickstart/, without authoring a new Karta definition. This is a non-authoring, boundary case: the skill should not drive the response.",
+      "expected_output": "A direct answer describing the quickstart output and pointing at docs/examples/quickstart/, with no Karta definition authored.",
       "expectations": [
-        "The response does not author or scaffold a Karta definition",
-        "The answer points at docs/examples/quickstart/ and describes its output",
-        "The add-workload-type skill does not drive the response"
+        {
+          "text": "The response does not author or scaffold a Karta definition",
+          "measured": "3/3 vs 3/3",
+          "kind": "guard"
+        },
+        {
+          "text": "The answer points at docs/examples/quickstart/ and describes its output",
+          "measured": "3/3 vs 3/3",
+          "kind": "guard"
+        },
+        {
+          "text": "The add-workload-type skill does not drive the response",
+          "measured": "3/3 vs n/a",
+          "kind": "guard"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "purpose": "Uncontaminated content discriminator, added to replace the role eval 2 can no longer serve. Volcano Job is absent from docs/catalog/ and has multiple task roles plus gang scheduling, which exercises multi-instance components. Not yet run: expectations are derived from eval 1's measured discriminators and carry no measured counts.",
+      "prompt": "We schedule Volcano jobs on this cluster. Add support for batch.volcano.sh/v1alpha1 Job to Karta.",
+      "expected_output": "A Karta definition for batch.volcano.sh/v1alpha1 Job with one component instance per entry in .spec.tasks[], replicas read per task, and a status mapping built from the real .status.state.phase values.",
+      "expectations": [
+        {
+          "text": "The deliverable is a Karta YAML definition only, with no Go source and no catalog registration",
+          "measured": null,
+          "kind": "discriminating"
+        },
+        {
+          "text": "Expected values are written to a predictions file before the run, and the definition is exercised with go run ./hack/karta-verify --karta <file> --workload <cr> --predict <file> --strict",
+          "measured": null,
+          "kind": "discriminating"
+        },
+        {
+          "text": "The task roles are modelled as a multi-instance component keyed on .spec.tasks[].name, with instanceIdPath and componentInstanceSelector both present",
+          "measured": null,
+          "kind": "discriminating"
+        },
+        {
+          "text": "Gang scheduling is either modelled from .spec.minAvailable or explicitly declined with a stated reason, rather than silently omitted",
+          "measured": null,
+          "kind": "discriminating"
+        },
+        {
+          "text": "The root component declares the full GVK group batch.volcano.sh, version v1alpha1, kind Job, and status is mapped from the real .status.state.phase values rather than invented condition types",
+          "measured": null,
+          "kind": "floor"
+        },
+        {
+          "text": "Replicas are read per task from .spec.tasks[].replicas with a null-safe default, and every jq path is absolute",
+          "measured": null,
+          "kind": "floor"
+        }
       ]
     }
   ]

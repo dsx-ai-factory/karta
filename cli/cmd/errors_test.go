@@ -133,14 +133,14 @@ func TestUnknownCommandSuggestsANearMatch(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
-	root.SetArgs([]string{"wrkload"})
+	root.SetArgs([]string{"definitons"})
 
 	err := root.Execute()
 	if err == nil {
 		t.Fatal("expected an error for an unknown command")
 	}
 	if !strings.Contains(err.Error(), "Did you mean this?") ||
-		!strings.Contains(err.Error(), "workload") {
+		!strings.Contains(err.Error(), "definitions") {
 		t.Errorf("expected a near-match suggestion, got %q", err.Error())
 	}
 }

@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# A minimal MPIJob (kubeflow.org/v2beta1) whose launcher runs `false` and exits non-zero.
+# With backoffLimit 0 the mpi-operator gives up after the first failure and marks the job
+# Failed on a CPU-only kind cluster. cleanPodPolicy None keeps the worker pod for extraction.
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: karta-e2e-mpi-failed
+  namespace: default
+spec:
+  slotsPerWorker: 1
+  runPolicy:
+    cleanPodPolicy: None
+    backoffLimit: 0
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: mpi-launcher
+              image: busybox:1.36
+              command: ["false"]
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+    Worker:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: mpi-worker
+              image: busybox:1.36
+              command: ["sleep", "infinity"]
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}

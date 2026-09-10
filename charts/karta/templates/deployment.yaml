@@ -1,3 +1,4 @@
+{{- include "karta.validateFipsMode" . -}}
 {{- if .Values.operator.enabled -}}
 {{- if and (gt (int .Values.replicaCount) 1) (not .Values.leaderElection.enabled) -}}
   {{- fail "replicaCount > 1 requires leaderElection.enabled=true; without leader election multiple replicas reconcile concurrently" -}}
@@ -34,6 +35,11 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if ne .Values.fipsMode "off" }}
+          env:
+            - name: GODEBUG
+              value: "fips140={{ .Values.fipsMode }}"
+          {{- end }}
           args:
             {{- if .Values.leaderElection.enabled }}
             - --leader-elect

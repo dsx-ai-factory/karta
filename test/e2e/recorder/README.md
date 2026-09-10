@@ -64,7 +64,7 @@ Karta, asserting each state matches.
 
 ```sh
 go test ./...            # offline unit tests, no cluster
-make test                # from the repo root, runs the recorder unit tests too
+make test-lib            # from the repo root, runs the recorder unit tests too
 make test-replay         # from the repo root, replays the recorded fixtures through Karta
 make record-e2e          # from the repo root, records the flows against a live cluster
 ```

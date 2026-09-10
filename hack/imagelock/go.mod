@@ -8,7 +8,7 @@ module github.com/run-ai/karta/hack/imagelock
 go 1.26.3
 
 require (
-	github.com/google/go-containerregistry v0.22.0
+	github.com/google/go-containerregistry v0.22.1
 	sigs.k8s.io/yaml v1.6.0
 )
 

@@ -181,6 +181,11 @@ For complete license texts, please refer to the source repositories or the LICEN
 - Version: v1.10.2
 - License: Apache-2.0
 
+### github.com/spf13/pflag
+- Name: github.com/spf13/pflag
+- Version: v1.0.10
+- License: BSD-3-Clause
+
 ### github.com/spf13/viper
 - Name: github.com/spf13/viper
 - Version: v1.21.0
@@ -370,11 +375,6 @@ For complete license texts, please refer to the source repositories or the LICEN
 - Name: github.com/spf13/cast
 - Version: v1.10.0
 - License: MIT
-
-### github.com/spf13/pflag
-- Name: github.com/spf13/pflag
-- Version: v1.0.10
-- License: BSD-3-Clause
 
 ### github.com/subosito/gotenv
 - Name: github.com/subosito/gotenv

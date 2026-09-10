@@ -25,6 +25,9 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
+# Go FIPS 140-3 runtime mode: off, on, or only. See docs/FIPS.md.
+fipsMode: "off"
+
 # Image pull secrets for private registries.
 imagePullSecrets: []
 

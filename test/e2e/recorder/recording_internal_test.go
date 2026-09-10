@@ -23,8 +23,12 @@ var _ = Describe("Recording", func() {
 			Flow:          "resumed",
 			Want:          string(v1alpha1.CompletedStatus),
 			Result:        Result{Failures: []string{"watch lost its position"}},
+			Summary: []SummaryEntry{
+				{Phases: []string{"Suspended"}, Amount: 1},
+				{Phases: []string{"Suspended", "Completed"}, Amount: 1},
+			},
 			Events: []Event{
-				{Kind: EventState, State: "Suspended", ResourceVersion: "101", Object: map[string]interface{}{
+				{Kind: EventState, State: "Suspended", Phases: []string{"Suspended"}, ResourceVersion: "101", Object: map[string]interface{}{
 					"kind": "Job", "metadata": map[string]interface{}{"name": "j"},
 					"status": map[string]interface{}{"active": float64(0)},
 				}},
@@ -35,7 +39,7 @@ var _ = Describe("Recording", func() {
 						Payload: map[string]interface{}{"spec": map[string]interface{}{"suspend": false}},
 					},
 				}},
-				{Kind: EventState, State: "Completed", StaleObservedGeneration: true, Object: map[string]interface{}{
+				{Kind: EventState, State: "Completed", Phases: []string{"Suspended", "Completed"}, StaleObservedGeneration: true, Object: map[string]interface{}{
 					"kind": "Job", "metadata": map[string]interface{}{"name": "j"},
 					"status": map[string]interface{}{"active": float64(0), "succeeded": float64(1)},
 				}},
@@ -51,6 +55,8 @@ var _ = Describe("Recording", func() {
 		Expect(got.Flow).To(Equal("resumed"))
 		Expect(got.Events).To(HaveLen(3))
 		Expect(got.states()).To(Equal([]string{"Suspended", "Completed"}))
+		Expect(got.Events[2].Phases).To(Equal([]string{"Suspended", "Completed"}))
+		Expect(got.Summary).To(Equal(rec.Summary))
 
 		act := got.Events[1].Action
 		Expect(act).NotTo(BeNil())
@@ -67,17 +73,20 @@ var _ = Describe("Recording", func() {
 
 	It("walks the STATE events with the Reader, skipping ACTION events", func() {
 		rec := Recording{Events: []Event{
-			{Kind: EventState, State: "Initializing", Object: map[string]interface{}{"status": map[string]interface{}{"active": float64(1)}}},
+			{Kind: EventState, State: "Initializing", Phases: []string{"Initializing"}, Object: map[string]interface{}{"status": map[string]interface{}{"active": float64(1)}}},
 			{Kind: EventAction, Action: &RecordedAction{Name: "Scale"}},
-			{Kind: EventState, State: "Running", Object: map[string]interface{}{"status": map[string]interface{}{"ready": float64(1)}}},
+			{Kind: EventState, State: "Running", Phases: []string{"Initializing", "Running"}, Object: map[string]interface{}{"status": map[string]interface{}{"ready": float64(1)}}},
 		}}
 
 		r := newReader(rec)
 		var states []string
+		var phases [][]string
 		for r.Next() {
 			states = append(states, r.State())
+			phases = append(phases, r.Phases())
 		}
 		Expect(states).To(Equal([]string{"Initializing", "Running"}))
+		Expect(phases).To(Equal([][]string{{"Initializing"}, {"Initializing", "Running"}}))
 
 		r2 := newReader(rec)
 		r2.Next()

@@ -36,14 +36,6 @@ jobs:
       - name: Run checks
         run: make check
 
-      - name: Get golangci-lint version
-        run: echo "GOLANGCI_LINT_VERSION=$(grep '^GOLANGCI_LINT_VERSION' hack/tools.mk | cut -d'=' -f2 | tr -d ' ')" >> $GITHUB_ENV
-
-      - name: Lint Go
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
-
       - name: Lint helm chart
         run: make helm-lint
 
@@ -55,10 +47,6 @@ jobs:
 
       - name: Test air-gap image lock generator
         run: make image-lock-test
-
-      - name: Run operator checks
-        working-directory: operator
-        run: make check
 
       - name: Lint shell scripts
         run: make lint-shell

@@ -38,7 +38,7 @@ catalog definitions.
 
 Give a NAME to address one definition, or use --group, and optionally --kind and
 --version, to narrow the list to one workload type. The table is the human view; json
-and yaml always emit the definitions themselves.`
+and yaml carry the definitions themselves, under an items key.`
 
 	definitionsExample = `  # Everything the CLI understands (catalog + cluster)
   kli definitions
@@ -49,7 +49,7 @@ and yaml always emit the definitions themselves.`
   # Which definition covers JobSet?
   kli definitions --group jobset.x-k8s.io --kind JobSet
 
-  # Dump them as applyable YAML
+  # Dump them as YAML
   kli definitions -o yaml`
 )
 
@@ -98,8 +98,8 @@ func newDefinitionsCommand(rcg genericclioptions.RESTClientGetter) *cobra.Comman
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolver, warnings := definitions.Load(cmd.Context(), rcg)
-			for _, warning := range warnings {
-				cmd.PrintErrln("warning: " + warning.Message)
+			if err := printWarnings(cmd.ErrOrStderr(), warningMessages(warnings)); err != nil {
+				return err
 			}
 
 			matches := resolver.List()

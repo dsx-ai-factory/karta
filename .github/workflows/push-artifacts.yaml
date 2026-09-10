@@ -28,7 +28,10 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: operator/go.mod
-          cache-dependency-path: operator/go.sum
+          cache-dependency-path: |
+            go.sum
+            operator/go.sum
+            cli/go.sum
 
       - name: Install helm
         uses: azure/setup-helm@v5
@@ -62,17 +65,16 @@ jobs:
       - name: Lint and validate helm chart
         run: make helm-lint helm-validate
 
-      - name: Test operator
-        working-directory: operator
+      - name: Run checks
+        if: github.ref_type == 'tag'
         run: make check
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push operator image
-        working-directory: operator
         run: |
-          make docker-buildx-push VERSION=$PACKAGE_VERSION
+          make operator-image-buildx-push VERSION="$PACKAGE_VERSION"
 
       - name: Generate air-gap image lock
         if: github.ref_type == 'tag'

@@ -70,7 +70,7 @@ What Karta brings on top, all derived from the Karta definition:
 
 ## Karta definition resolution
 
-We want the CLI to be useful immediately - without requiring users to install Karta CRDs into their cluster first. If someone has PyTorchJobs running, `karta workload list` should find them out of the box.
+We want the CLI to be useful immediately - without requiring users to install Karta CRDs into their cluster first. If someone has PyTorchJobs running, `karta get pytorchjob` should find them out of the box.
 
 To make this work, the CLI would ship with **community definitions** - the Karta definitions from `docs/examples/` embedded in the binary. These are maintained by the open-source community, cover standard frameworks (PyTorchJob, RayCluster, JobSet, KServe, etc.), and are tested against each framework's stable API. They update automatically when you upgrade the CLI.
 
@@ -101,28 +101,30 @@ karta definition ...      # meta: what workload types does Karta understand
 - `karta workload tree|status|resources <name>` operates on a single workload. The namespace is taken from `-n` or the current context. If the same name exists in multiple namespaces, the command errors and asks the user to specify `-n`.
 - Pod discovery for tree building happens in the workload's namespace - pods outside it are not considered.
 
-### `karta workload list`
+### `karta get`
 
-List all workloads discovered via all known Kartas (community + cluster).
+List workloads of a type, resolved through the Karta definition that covers it. The type is a positional token, following the verb-first kubectl grammar (`karta VERB TYPE[/NAME]`).
 
 ```shell
-$ karta workload list -n ml-team
-NAMESPACE  NAME              KIND                      PHASE       COMPONENTS                                         GPU   AGE
-ml-team    llama-finetune    PyTorchJob                Running     master(1), worker(4)                               33    2h
-ml-team    embed-svc         KServe                    Running     predictor(2)                                       2     5d
-ml-team    preprocess        JobSet                    Completed   etl(3)                                             0     1h
-ml-team    ray-train         RayCluster                Degraded    head(1), gpu-worker(3)                             12    30m
-ml-team    my-pipeline       DynamoGraphDeployment     Running     Frontend(2), PrefillWorker(4), DecodeWorker(2)     48    1h
+$ karta get pytorchjob -n ml-team
+NAME              NAMESPACE   PHASE       COMPONENTS                               GPU   AGE
+llama-finetune    ml-team     Running     master(1), worker(4)                     33    2h
+sweep-7           ml-team     Degraded    master(1), worker(8)                     64    30m
 ```
 
-Key flags:
-- `--phase <Running|Failed|...>` - filter by normalized phase
-- `--type <Kind>` - filter by workload kind (e.g. `PyTorchJob`, `DynamoGraphDeployment`)
-- `-l, --selector <labels>` - filter by labels (same syntax as `kubectl`)
-- `-A, --all-namespaces`
-- `-o <table|wide|json|yaml>` - output format. `-o json` emits the full `WorkloadView` for scripting and MCP consumers.
+`karta get jobset/preprocess` fetches one row. Type matching is lenient: case-insensitive, singular or plural, and kubectl short names all resolve.
 
-Clusters can be huge - thousands of workloads across many types is a realistic scenario for our users. `karta workload list` must support pagination so the first page loads quickly and users can narrow the view with filters (`-n`, `-l`, `--type`) before fetching more. The default ordering of the list should be defined with the product team.
+Key flags:
+- `--phase <Running|Failed|...>` - filter by normalized phase, repeatable
+- `-l, --selector <labels>` - filter by labels (same syntax as `kubectl`)
+- `--chunk-size <n>` - API list page size
+- `-o <table|wide|json|yaml>` - output format. `-o json` emits the typed `WorkloadView` for scripting and MCP consumers, always under an `items` key alongside a `count`, so consumers never branch on shape.
+
+Rows are ordered newest first. Counts and GPU are read from the workload spec, so listing costs one API call per type and no pod reads; `wide` adds the ORIGIN of the resolving definition. A NODES column needs live pod data and follows with `karta describe`, which has to build pod matching anyway.
+
+The cross-type view - every workload Karta covers, in one table, which is the view no native tool provides - is the next step for this command. It needs a rule for which objects are workload roots: the catalog covers Deployment and Pod but not ReplicaSet, so a single-level owner check either floods the table with a Deployment's pods or hides workloads whose controller Karta does not cover.
+
+Clusters can be huge - thousands of workloads across many types is a realistic scenario for our users. `karta get` pages through large result sets so per-request API pressure stays bounded. Note that `--chunk-size` bounds neither total memory nor time-to-first-row: every page is retained, and the default ordering is global, so the whole result is sorted before the first row is rendered.
 
 ### `karta workload tree <name>`
 

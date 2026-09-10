@@ -39,7 +39,7 @@ func TestRootHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("--help returned error: %v", err)
 	}
-	for _, want := range []string{"--kubeconfig", "--output", "workload", "definition"} {
+	for _, want := range []string{"--kubeconfig", "--output", "get", "definition"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("help output missing %q\n%s", want, out)
 		}
