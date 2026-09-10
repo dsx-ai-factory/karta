@@ -33,3 +33,8 @@ func ScaleReplicas(n int) *recorder.Action {
 func Resume() *recorder.Action {
 	return &recorder.Action{Type: recorder.ActionResume, Patch: []byte(`{"spec":{"suspend":false}}`)}
 }
+
+// ScaleParallelism sets a batch Job's spec.parallelism.
+func ScaleParallelism(n int) *recorder.Action {
+	return &recorder.Action{Type: recorder.ActionScale, Patch: []byte(fmt.Sprintf(`{"spec":{"parallelism":%d}}`, n))}
+}
