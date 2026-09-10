@@ -36,9 +36,15 @@ spec:
             - byConditions:
                 - type: Complete
                   status: "True"
+            - byConditions:
+                - type: SuccessCriteriaMet
+                  status: "True"
           failed:
             - byConditions:
                 - type: Failed
+                  status: "True"
+            - byConditions:
+                - type: FailureTarget
                   status: "True"
           degraded:
             - byExpression:
