@@ -1,0 +1,179 @@
+events:
+- kind: STATE
+  object:
+    apiVersion: apps.nvidia.com/v1alpha1
+    kind: NIMService
+    metadata:
+      creationTimestamp: "2026-09-10T16:13:58Z"
+      finalizers:
+      - finalizer.nimservice.apps.nvidia.com
+      generation: 2
+      name: karta-e2e-nim-initializing
+      namespace: test-xhjbx
+      uid: 914fef3b-01dd-4c84-bc38-305614c44ab6
+    spec:
+      authSecret: ngc-secret
+      env:
+      - name: NIM_REQUEST_LATENCY
+        value: "2"
+      expose:
+        ingress:
+          spec: {}
+        service:
+          port: 8000
+          type: ClusterIP
+      image:
+        pullPolicy: IfNotPresent
+        repository: nonexistent-nim
+        tag: bad
+      inferencePlatform: standalone
+      livenessProbe: {}
+      metrics:
+        serviceMonitor: {}
+      readinessProbe: {}
+      replicas: 1
+      scale:
+        hpa:
+          maxReplicas: 0
+          minReplicas: 1
+      startupProbe: {}
+      storage:
+        nimCache: {}
+        pvc:
+          create: true
+          size: 1Gi
+          volumeAccessMode: ReadWriteOnce
+  phases:
+  - Initializing
+  resourceVersion: "896738"
+  state: Initializing
+- kind: STATE
+  object:
+    apiVersion: apps.nvidia.com/v1alpha1
+    kind: NIMService
+    metadata:
+      creationTimestamp: "2026-09-10T16:13:58Z"
+      finalizers:
+      - finalizer.nimservice.apps.nvidia.com
+      generation: 2
+      name: karta-e2e-nim-initializing
+      namespace: test-xhjbx
+      uid: 914fef3b-01dd-4c84-bc38-305614c44ab6
+    spec:
+      authSecret: ngc-secret
+      env:
+      - name: NIM_REQUEST_LATENCY
+        value: "2"
+      expose:
+        ingress:
+          spec: {}
+        service:
+          port: 8000
+          type: ClusterIP
+      image:
+        pullPolicy: IfNotPresent
+        repository: nonexistent-nim
+        tag: bad
+      inferencePlatform: standalone
+      livenessProbe: {}
+      metrics:
+        serviceMonitor: {}
+      readinessProbe: {}
+      replicas: 1
+      scale:
+        hpa:
+          maxReplicas: 0
+          minReplicas: 1
+      startupProbe: {}
+      storage:
+        nimCache: {}
+        pvc:
+          create: true
+          size: 1Gi
+          volumeAccessMode: ReadWriteOnce
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-10T16:13:58Z"
+        message: The PVC has been created for storing NIM
+        reason: PVCCreated
+        status: "True"
+        type: NIM_CACHE_PVC_CREATED
+      state: PVC-Created
+  phases:
+  - Initializing
+  resourceVersion: "896747"
+  state: Initializing
+- kind: STATE
+  object:
+    apiVersion: apps.nvidia.com/v1alpha1
+    kind: NIMService
+    metadata:
+      creationTimestamp: "2026-09-10T16:13:58Z"
+      finalizers:
+      - finalizer.nimservice.apps.nvidia.com
+      generation: 2
+      name: karta-e2e-nim-initializing
+      namespace: test-xhjbx
+      uid: 914fef3b-01dd-4c84-bc38-305614c44ab6
+    spec:
+      authSecret: ngc-secret
+      env:
+      - name: NIM_REQUEST_LATENCY
+        value: "2"
+      expose:
+        ingress:
+          spec: {}
+        service:
+          port: 8000
+          type: ClusterIP
+      image:
+        pullPolicy: IfNotPresent
+        repository: nonexistent-nim
+        tag: bad
+      inferencePlatform: standalone
+      livenessProbe: {}
+      metrics:
+        serviceMonitor: {}
+      readinessProbe: {}
+      replicas: 1
+      scale:
+        hpa:
+          maxReplicas: 0
+          minReplicas: 1
+      startupProbe: {}
+      storage:
+        nimCache: {}
+        pvc:
+          create: true
+          size: 1Gi
+          volumeAccessMode: ReadWriteOnce
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-10T16:13:58Z"
+        message: ""
+        reason: NotReady
+        status: "False"
+        type: Ready
+      - lastTransitionTime: "2026-09-10T16:13:58Z"
+        message: ""
+        reason: Ready
+        status: "False"
+        type: Failed
+      state: NotReady
+  phases:
+  - Initializing
+  resourceVersion: "896750"
+  state: Initializing
+flow: initializing
+kartaFile: docs/catalog/apps-nvidia-com-nimservice-v1alpha1.yaml
+kartaName: apps-nvidia-com-nimservice-v1alpha1
+operator: nim
+result:
+  succeeded: true
+schemaVersion: 1
+summary:
+- amount: 3
+  phases:
+  - Initializing
+version: v1.34.0
+want: Initializing
