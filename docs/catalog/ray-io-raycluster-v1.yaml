@@ -16,6 +16,10 @@ spec:
         phaseDefinition:
           path: .status.state
         statusMappings:
+          initializing:
+            - byExpression:
+                expression: (.spec.suspend != true) and (.status.state != "ready") and (.status.state != "failed")
+                expectedResult: "true"
           running:
             - byPhase: ready
           failed:

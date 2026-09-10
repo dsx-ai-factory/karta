@@ -30,6 +30,11 @@ func KnativeServing() *v1alpha1.Karta {
 						},
 						StatusMappings: v1alpha1.StatusMappings{
 							Running: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("True")}}}},
+							// Deploying: Ready is Unknown while the revision, route, and ingress
+							// come up (reasons OutOfDate, RevisionMissing, IngressNotConfigured,
+							// Uninitialized). Failed once Ready settles False.
+							Initializing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("Unknown")}}}},
+							Failed:       []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("False")}}}},
 						},
 					},
 				},

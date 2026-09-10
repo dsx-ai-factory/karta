@@ -19,6 +19,10 @@ spec:
           statusFieldName: status
           messageFieldName: message
         statusMappings:
+          initializing:
+            - byExpression:
+                expression: (([.status.conditions[]? | select(.type == "Ready" and .status == "True")] | length) == 0) and (([.status.conditions[]? | select(.type == "Ready" and .status == "False")] | length) == 0)
+                expectedResult: "true"
           running:
             - byConditions:
                 - type: PredictorReady

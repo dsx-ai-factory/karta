@@ -22,7 +22,12 @@ spec:
           messageFieldName: message
         statusMappings:
           initializing:
-            - byPhase: PENDING
+            - byExpression:
+                expression: (.status.jobStatus // "") == "PENDING" and (.status.jobDeploymentStatus // "") != "Suspended" and (.status.jobDeploymentStatus // "") != "Suspending"
+                expectedResult: "true"
+            - byExpression:
+                expression: (.status.jobStatus // "") == "" and (.status.jobDeploymentStatus // "") != "Suspended" and (.status.jobDeploymentStatus // "") != "Suspending"
+                expectedResult: "true"
           running:
             - byPhase: RUNNING
           completed:
@@ -31,7 +36,7 @@ spec:
             - byPhase: FAILED
           suspended:
             - byExpression:
-                expression: .status.jobDeploymentStatus == "Suspended"
+                expression: .status.jobDeploymentStatus == "Suspended" or .status.jobDeploymentStatus == "Suspending"
                 expectedResult: "true"
       suspendDefinition:
         suspendActions:

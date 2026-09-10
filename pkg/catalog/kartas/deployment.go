@@ -35,9 +35,11 @@ func Deployment() *v1alpha1.Karta {
 							ReasonFieldName:  ptr.To("reason"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
-								{Type: "Progressing", Status: ptr.To("True")},
-								{Type: "Available", Status: ptr.To("False")},
+							// Progressing while not yet Available: Available False, or absent (a just-created
+							// Deployment is Progressing/NewReplicaSetCreated before Available is written).
+							Initializing: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
+								Expression:     `(([.status.conditions[]? | select(.type == "Progressing" and .status == "True")] | length) > 0) and (([.status.conditions[]? | select(.type == "Available" and .status == "True")] | length) == 0)`,
+								ExpectedResult: "true",
 							}}},
 							Running: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
 								{Type: "Progressing", Status: ptr.To("True"), Reason: ptr.To("NewReplicaSetAvailable")},

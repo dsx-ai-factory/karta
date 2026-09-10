@@ -19,6 +19,9 @@ spec:
           initializing:
             - byPhase: initializing
             - byPhase: pending
+            - byExpression:
+                expression: (.status.state // "") == ""
+                expectedResult: "true"
           running:
             - byPhase: successful
           failed:

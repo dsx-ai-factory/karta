@@ -25,11 +25,9 @@ spec:
           reasonFieldName: reason
         statusMappings:
           initializing:
-            - byConditions:
-                - type: Progressing
-                  status: "True"
-                - type: Available
-                  status: "False"
+            - byExpression:
+                expression: (([.status.conditions[]? | select(.type == "Progressing" and .status == "True")] | length) > 0) and (([.status.conditions[]? | select(.type == "Available" and .status == "True")] | length) == 0)
+                expectedResult: "true"
           running:
             - byConditions:
                 - type: Progressing

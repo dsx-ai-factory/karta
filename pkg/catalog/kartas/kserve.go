@@ -34,6 +34,13 @@ func KServe() *v1alpha1.Karta {
 								{Type: "RoutesReady", Status: ptr.To("True")},
 								{Type: "LatestDeploymentReady", Status: ptr.To("True")},
 							}}},
+							// Deploying: Ready is not yet decided (absent early, then Unknown while
+							// the predictor, routes, and ingress come up). Failed is the specific
+							// all-False pattern below, where Ready is False, so this stays disjoint.
+							Initializing: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
+								Expression:     `(([.status.conditions[]? | select(.type == "Ready" and .status == "True")] | length) == 0) and (([.status.conditions[]? | select(.type == "Ready" and .status == "False")] | length) == 0)`,
+								ExpectedResult: "true",
+							}}},
 							Failed: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
 								{Type: "PredictorReady", Status: ptr.To("False")},
 								{Type: "PredictorConfigurationReady", Status: ptr.To("False")},

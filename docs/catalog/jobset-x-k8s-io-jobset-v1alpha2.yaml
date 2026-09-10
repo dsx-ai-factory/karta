@@ -22,11 +22,11 @@ spec:
         statusMappings:
           initializing:
             - byExpression:
-                expression: (.status.replicatedJobsStatus // []) | any(.active > 0 and (.ready // 0) == 0) and all(.failed == 0)
+                expression: ((.status.replicatedJobsStatus // []) | length) > 0 and ((.status.replicatedJobsStatus // []) | all((.active // 0) == 0 and (.ready // 0) == 0)) and (([.status.conditions[]? | select((.type == "Completed" or .type == "Failed" or .type == "Suspended") and .status == "True")] | length) == 0)
                 expectedResult: "true"
           running:
             - byExpression:
-                expression: (.status.replicatedJobsStatus // []) | any(.ready > 0 and .active > 0) and all(.failed == 0)
+                expression: (.status.replicatedJobsStatus // []) | any((.active // 0) > 0 or (.ready // 0) > 0) and all((.failed // 0) == 0)
                 expectedResult: "true"
           completed:
             - byConditions:

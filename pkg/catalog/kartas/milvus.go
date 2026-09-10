@@ -37,6 +37,11 @@ func Milvus() *v1alpha1.Karta {
 							},
 							Initializing: []v1alpha1.StatusMatcher{
 								{ByPhase: "Pending"},
+								// Just created: the operator has not written status.status yet.
+								{ByExpression: &v1alpha1.ExpressionMatcher{
+									Expression:     `(.status.status // "") == ""`,
+									ExpectedResult: "true",
+								}},
 							},
 							Degraded: []v1alpha1.StatusMatcher{
 								{ByPhase: "Unhealthy"},

@@ -22,6 +22,9 @@ spec:
         statusMappings:
           initializing:
             - byPhase: Pending
+            - byExpression:
+                expression: (.status.status // "") == ""
+                expectedResult: "true"
           running:
             - byPhase: Healthy
           degraded:

@@ -36,12 +36,26 @@ func Rayjob() *v1alpha1.Karta {
 							MessageFieldName: ptr.To("message"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{{ByPhase: "PENDING"}},
-							Running:      []v1alpha1.StatusMatcher{{ByPhase: "RUNNING"}},
-							Completed:    []v1alpha1.StatusMatcher{{ByPhase: "SUCCEEDED"}},
-							Failed:       []v1alpha1.StatusMatcher{{ByPhase: "FAILED"}},
+							// PENDING once the job is queued, plus the provisioning window before
+							// that: jobStatus empty while the RayJob brings up its cluster. Both
+							// exclude the suspension states, which read Suspended, never Initializing.
+							Initializing: []v1alpha1.StatusMatcher{
+								{ByExpression: &v1alpha1.ExpressionMatcher{
+									Expression:     `(.status.jobStatus // "") == "PENDING" and (.status.jobDeploymentStatus // "") != "Suspended" and (.status.jobDeploymentStatus // "") != "Suspending"`,
+									ExpectedResult: "true",
+								}},
+								{ByExpression: &v1alpha1.ExpressionMatcher{
+									Expression:     `(.status.jobStatus // "") == "" and (.status.jobDeploymentStatus // "") != "Suspended" and (.status.jobDeploymentStatus // "") != "Suspending"`,
+									ExpectedResult: "true",
+								}},
+							},
+							Running:   []v1alpha1.StatusMatcher{{ByPhase: "RUNNING"}},
+							Completed: []v1alpha1.StatusMatcher{{ByPhase: "SUCCEEDED"}},
+							Failed:    []v1alpha1.StatusMatcher{{ByPhase: "FAILED"}},
+							// Suspended or on the way there: the operator reports Suspending while it
+							// tears the cluster down before settling on Suspended.
 							Suspended: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
-								Expression:     `.status.jobDeploymentStatus == "Suspended"`,
+								Expression:     `.status.jobDeploymentStatus == "Suspended" or .status.jobDeploymentStatus == "Suspending"`,
 								ExpectedResult: "true",
 							}}},
 						},

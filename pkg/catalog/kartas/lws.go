@@ -29,15 +29,18 @@ func LWS() *v1alpha1.Karta {
 							MessageFieldName: ptr.To("message"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
-								{Type: "Progressing", Status: ptr.To("True")},
-								{Type: "Available", Status: ptr.To("False")},
+							// Progressing while not yet available: Available False, or absent (a
+							// starting LeaderWorkerSet is Progressing before it writes Available).
+							Initializing: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
+								Expression:     `(([.status.conditions[]? | select(.type == "Progressing" and .status == "True")] | length) > 0) and (([.status.conditions[]? | select(.type == "Available" and .status == "True")] | length) == 0)`,
+								ExpectedResult: "true",
 							}}},
+							// Available=True is the operator's ready signal and survives a scale-down,
+							// where the replica counts lag; the settled-replicas expression is the
+							// fallback for when the condition is not populated.
 							Running: []v1alpha1.StatusMatcher{
 								{ByConditions: []v1alpha1.ExpectedCondition{
-									{Type: "Available", Status: ptr.To("True"), Reason: ptr.To("AllGroupsReady")},
-									{Type: "Progressing", Status: ptr.To("False")},
-									{Type: "UpdateInProgress", Status: ptr.To("False")},
+									{Type: "Available", Status: ptr.To("True")},
 								}},
 								{ByExpression: &v1alpha1.ExpressionMatcher{
 									Expression:     "(.status.replicas // 0) > 0 and .status.readyReplicas == .status.replicas and .status.updatedReplicas == .status.replicas",

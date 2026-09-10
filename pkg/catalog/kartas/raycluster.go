@@ -32,6 +32,13 @@ func Raycluster() *v1alpha1.Karta {
 						StatusMappings: v1alpha1.StatusMappings{
 							Running: []v1alpha1.StatusMatcher{{ByPhase: "ready"}},
 							Failed:  []v1alpha1.StatusMatcher{{ByPhase: "failed"}},
+							// Converging toward ready: not suspended and state not yet "ready" or
+							// "failed". Covers a fresh provision (state empty) and the resume window
+							// where suspend is already false but state still lags at "suspended".
+							Initializing: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
+								Expression:     `(.spec.suspend != true) and (.status.state != "ready") and (.status.state != "failed")`,
+								ExpectedResult: "true",
+							}}},
 							Suspended: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
 								Expression:     `.spec.suspend == true and (.status.state == "suspended" or (.status.state | not))`,
 								ExpectedResult: "true",

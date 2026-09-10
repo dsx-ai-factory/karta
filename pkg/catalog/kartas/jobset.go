@@ -35,15 +35,18 @@ func Jobset() *v1alpha1.Karta {
 						},
 						StatusMappings: v1alpha1.StatusMappings{
 							Initializing: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
-								// Some replicatedJobs are active but none are ready yet.
-								// Guard against a null replicatedJobsStatus before the JobSet
-								// controller initializes status.
-								Expression:     "(.status.replicatedJobsStatus // []) | any(.active > 0 and (.ready // 0) == 0) and all(.failed == 0)",
+								// In progress with no working pods: status exists, no replicatedJob has
+								// active or ready pods, and no terminal or suspended condition is set.
+								// Covers a just-created JobSet (all counts zero) and the window after a
+								// job succeeds but before the JobSet-level Completed condition is set.
+								Expression:     "((.status.replicatedJobsStatus // []) | length) > 0 and ((.status.replicatedJobsStatus // []) | all((.active // 0) == 0 and (.ready // 0) == 0)) and (([.status.conditions[]? | select((.type == \"Completed\" or .type == \"Failed\" or .type == \"Suspended\") and .status == \"True\")] | length) == 0)",
 								ExpectedResult: "true",
 							}}},
 							Running: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
-								// Total ready across all replicatedJobs equals total expected replicas.
-								Expression:     "(.status.replicatedJobsStatus // []) | any(.ready > 0 and .active > 0) and all(.failed == 0)",
+								// Working: at least one replicatedJob has active or ready pods and none
+								// have failed. Reading either count (not both) keeps the state stable
+								// while the controller briefly flaps ready to 0 mid-run.
+								Expression:     "(.status.replicatedJobsStatus // []) | any((.active // 0) > 0 or (.ready // 0) > 0) and all((.failed // 0) == 0)",
 								ExpectedResult: "true",
 							}}},
 							Completed: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Completed", Status: ptr.To("True")}}}},
