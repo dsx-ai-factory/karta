@@ -400,7 +400,7 @@ E2E_TIMEOUT ?= 30m
 # Select cases by operator with the same WORKLOADS list as e2e-up: record-e2e WORKLOADS="batch-job"
 # records just the batch-job case (a comma is OR in ginkgo label filters). E2E_LABELS overrides it
 # with a raw ginkgo label expression.
-E2E_LABELS ?= $(subst $(space),$(comma),$(strip $(filter-out all,$(WORKLOADS))))
+E2E_LABELS ?= $(subst $(space),$(comma),$(strip $(filter-out all none,$(WORKLOADS))))
 
 # FLOW="scaled" narrows a record to one flow by name (focuses the spec with that title);
 # without WORKLOADS it matches that flow name across all workload types.
@@ -413,12 +413,20 @@ test-replay: ## Replay the recorded fixtures through Karta offline (no cluster)
 	cd test/e2e && go build ./...
 	cd test/e2e && go test ./replay_tests/...
 
+# Defaults and accepted values live in hack/e2e/global.env.
+KARTA_WEBHOOK_MODE ?= auto
+CERT_MANAGER ?= auto
+
 # Pick which operators to install:
 #   make e2e-up                          # everything
 #   make e2e-up WORKLOADS="jobset lws"   # a subset - one provision, deps resolved once
+#   make e2e-up WORKLOADS=none           # base only, no workload operators
 .PHONY: e2e-up
-e2e-up: ## Provision a kind cluster + operators (WORKLOADS="jobset kuberay" for a subset, or "all"; CLUSTER_NAME=<name> for an isolated parallel cluster)
-	CLUSTER_NAME=$(CLUSTER_NAME) ./hack/e2e/up.sh $(WORKLOADS)
+e2e-up: ## Provision a kind cluster + operators (WORKLOADS=<list>|all|none; KARTA_WEBHOOK_MODE=auto|cert-manager|disabled; CLUSTER_NAME for a parallel cluster)
+	CLUSTER_NAME=$(CLUSTER_NAME) \
+	KARTA_WEBHOOK_MODE=$(KARTA_WEBHOOK_MODE) \
+	CERT_MANAGER=$(CERT_MANAGER) \
+	./hack/e2e/up.sh $(WORKLOADS)
 
 .PHONY: e2e-down
 e2e-down: ## Tear down the e2e cluster (set CLUSTER_NAME for a named one)
@@ -438,9 +446,9 @@ verify-recordings: ## Fail if any recorded fixture ended with succeeded false (r
 	if [ -n "$$bad" ]; then echo "recordings that did not succeed:"; echo "$$bad"; exit 1; fi; \
 	echo "all recordings succeeded"
 
-# The e2e shell scripts to shellcheck: the provisioner, teardown, the shared
-# helpers, and every per-operator install.sh/verify.sh.
-E2E_SHELL := hack/e2e/up.sh hack/e2e/down.sh \
+# The e2e shell scripts to shellcheck: the provisioner, teardown, the Karta install,
+# the shared helpers, and every per-operator install.sh/verify.sh.
+E2E_SHELL := hack/e2e/up.sh hack/e2e/down.sh hack/e2e/install.sh \
 	hack/e2e/operators/_common.sh \
 	$(wildcard hack/e2e/operators/*/install.sh) \
 	$(wildcard hack/e2e/operators/*/verify.sh)
