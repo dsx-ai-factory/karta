@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# A Deployment pinned to a nonexistent node via nodeSelector, so its pod can never schedule. With
+# progressDeadlineSeconds 10 the controller gives up quickly and sets Progressing=False with reason
+# ProgressDeadlineExceeded, which the Karta library reads as Failed.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: karta-e2e-deploy-failed
+  namespace: default
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 10
+  selector:
+    matchLabels: {app: karta-e2e-deploy-failed}
+  template:
+    metadata:
+      labels: {app: karta-e2e-deploy-failed}
+    spec:
+      nodeSelector:
+        karta-e2e/nonexistent: "true"
+      containers:
+        - name: worker
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep infinity"]
+          resources:
+            requests: {cpu: 50m, memory: 32Mi}

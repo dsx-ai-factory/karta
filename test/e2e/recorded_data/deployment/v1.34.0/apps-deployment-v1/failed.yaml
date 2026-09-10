@@ -1,0 +1,293 @@
+events:
+- kind: STATE
+  object:
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2026-09-09T15:07:28Z"
+      generation: 1
+      name: karta-e2e-deploy-failed
+      namespace: test-xxs6p
+      uid: b85ee98a-1746-41a4-8009-c83ea623b6cf
+    spec:
+      progressDeadlineSeconds: 10
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: karta-e2e-deploy-failed
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            app: karta-e2e-deploy-failed
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - sleep infinity
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          nodeSelector:
+            karta-e2e/nonexistent: "true"
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-09T15:07:28Z"
+        lastUpdateTime: "2026-09-09T15:07:28Z"
+        message: Created new replica set "karta-e2e-deploy-failed-86c976d7f4"
+        reason: NewReplicaSetCreated
+        status: "True"
+        type: Progressing
+  phases:
+  - Initializing
+  resourceVersion: "339464"
+  state: Initializing
+- kind: STATE
+  object:
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2026-09-09T15:07:28Z"
+      generation: 1
+      name: karta-e2e-deploy-failed
+      namespace: test-xxs6p
+      uid: b85ee98a-1746-41a4-8009-c83ea623b6cf
+    spec:
+      progressDeadlineSeconds: 10
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: karta-e2e-deploy-failed
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            app: karta-e2e-deploy-failed
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - sleep infinity
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          nodeSelector:
+            karta-e2e/nonexistent: "true"
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-09T15:07:28Z"
+        lastUpdateTime: "2026-09-09T15:07:28Z"
+        message: Created new replica set "karta-e2e-deploy-failed-86c976d7f4"
+        reason: NewReplicaSetCreated
+        status: "True"
+        type: Progressing
+      - lastTransitionTime: "2026-09-09T15:07:28Z"
+        lastUpdateTime: "2026-09-09T15:07:28Z"
+        message: Deployment does not have minimum availability.
+        reason: MinimumReplicasUnavailable
+        status: "False"
+        type: Available
+      observedGeneration: 1
+      unavailableReplicas: 1
+  phases:
+  - Initializing
+  resourceVersion: "339467"
+  state: Initializing
+- kind: STATE
+  object:
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2026-09-09T15:07:28Z"
+      generation: 1
+      name: karta-e2e-deploy-failed
+      namespace: test-xxs6p
+      uid: b85ee98a-1746-41a4-8009-c83ea623b6cf
+    spec:
+      progressDeadlineSeconds: 10
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: karta-e2e-deploy-failed
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            app: karta-e2e-deploy-failed
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - sleep infinity
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          nodeSelector:
+            karta-e2e/nonexistent: "true"
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-09T15:07:28Z"
+        lastUpdateTime: "2026-09-09T15:07:28Z"
+        message: Deployment does not have minimum availability.
+        reason: MinimumReplicasUnavailable
+        status: "False"
+        type: Available
+      - lastTransitionTime: "2026-09-09T15:07:28Z"
+        lastUpdateTime: "2026-09-09T15:07:28Z"
+        message: ReplicaSet "karta-e2e-deploy-failed-86c976d7f4" is progressing.
+        reason: ReplicaSetUpdated
+        status: "True"
+        type: Progressing
+      observedGeneration: 1
+      replicas: 1
+      unavailableReplicas: 1
+      updatedReplicas: 1
+  phases:
+  - Initializing
+  resourceVersion: "339473"
+  state: Initializing
+- kind: STATE
+  object:
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2026-09-09T15:07:28Z"
+      generation: 1
+      name: karta-e2e-deploy-failed
+      namespace: test-xxs6p
+      uid: b85ee98a-1746-41a4-8009-c83ea623b6cf
+    spec:
+      progressDeadlineSeconds: 10
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: karta-e2e-deploy-failed
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            app: karta-e2e-deploy-failed
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - sleep infinity
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            name: worker
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          nodeSelector:
+            karta-e2e/nonexistent: "true"
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+    status:
+      conditions:
+      - lastTransitionTime: "2026-09-09T15:07:28Z"
+        lastUpdateTime: "2026-09-09T15:07:28Z"
+        message: Deployment does not have minimum availability.
+        reason: MinimumReplicasUnavailable
+        status: "False"
+        type: Available
+      - lastTransitionTime: "2026-09-09T15:07:39Z"
+        lastUpdateTime: "2026-09-09T15:07:39Z"
+        message: ReplicaSet "karta-e2e-deploy-failed-86c976d7f4" has timed out progressing.
+        reason: ProgressDeadlineExceeded
+        status: "False"
+        type: Progressing
+      observedGeneration: 1
+      replicas: 1
+      unavailableReplicas: 1
+      updatedReplicas: 1
+  phases:
+  - Failed
+  resourceVersion: "339569"
+  state: Failed
+flow: failed
+kartaFile: docs/catalog/apps-deployment-v1.yaml
+kartaName: apps-deployment-v1
+operator: deployment
+result:
+  succeeded: true
+schemaVersion: 1
+summary:
+- amount: 3
+  phases:
+  - Initializing
+- amount: 1
+  phases:
+  - Failed
+version: v1.34.0
+want: Failed
