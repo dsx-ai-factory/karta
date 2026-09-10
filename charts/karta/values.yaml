@@ -1,6 +1,10 @@
 # Default values for the karta operator chart.
 # Override with --set key=value or -f my-values.yaml.
 
+global:
+  # Go FIPS 140-3 runtime mode: off, on, or only. See docs/FIPS.md.
+  fipsMode: "off"
+
 # Set false to install only the CRD, without deploying the operator workload.
 operator:
   enabled: true
@@ -24,9 +28,6 @@ image:
   # stay in lockstep.
   tag: ""
   pullPolicy: IfNotPresent
-
-# Go FIPS 140-3 runtime mode: off, on, or only. See docs/FIPS.md.
-fipsMode: "off"
 
 # Image pull secrets for private registries.
 imagePullSecrets: []
