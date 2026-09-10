@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 NVIDIA Corporation
-{{- include "karta.validateFipsMode" . -}}
+{{- $fipsMode := include "karta.fipsMode" . -}}
 {{- if .Values.crdUpgrader.enabled }}
 apiVersion: batch/v1
 kind: Job
@@ -42,9 +42,9 @@ spec:
           env:
             - name: KUBECACHEDIR
               value: /tmp/kube-cache
-            {{- if ne .Values.fipsMode "off" }}
+            {{- if ne $fipsMode "off" }}
             - name: GODEBUG
-              value: {{ if eq .Values.fipsMode "only" }}"fips140=only,tlsmlkem=0"{{ else }}"fips140={{ .Values.fipsMode }}"{{ end }}
+              value: {{ if eq $fipsMode "only" }}"fips140=only,tlsmlkem=0"{{ else }}"fips140={{ $fipsMode }}"{{ end }}
             {{- end }}
           volumeMounts:
             - name: crds
