@@ -4,6 +4,8 @@
 package tree
 
 import (
+	"iter"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/run-ai/karta/pkg/resource"
@@ -53,4 +55,26 @@ type InstanceNode struct {
 	Scale             *resource.Scale
 	ExtractedInstance *resource.ExtractedInstance
 	Children          []ComponentNode
+}
+
+// Instances yields every (component, instance) pair of the tree depth-first,
+// nested children included, so consumers do not hand-roll the recursion.
+func (t *WorkloadTree) Instances() iter.Seq2[ComponentNode, InstanceNode] {
+	return func(yield func(ComponentNode, InstanceNode) bool) {
+		walkInstances(t.Children, yield)
+	}
+}
+
+func walkInstances(nodes []ComponentNode, yield func(ComponentNode, InstanceNode) bool) bool {
+	for _, component := range nodes {
+		for _, instance := range component.Instances {
+			if !yield(component, instance) {
+				return false
+			}
+			if !walkInstances(instance.Children, yield) {
+				return false
+			}
+		}
+	}
+	return true
 }

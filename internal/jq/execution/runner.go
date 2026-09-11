@@ -39,6 +39,18 @@ func NewDefaultRunner(source any) Runner {
 	}
 }
 
+// NewPrimitiveRunner creates a runner over a value that is already
+// JSON-primitive (the result of a runner's GetObject or a json.Unmarshal:
+// only nil, bool, float64, string, []any and map[string]any). It skips the
+// defensive JSON round-trip NewDefaultRunner performs, which is a full
+// marshal+unmarshal of the object. The caller owns that guarantee - a
+// non-primitive value (typed structs, int64) fails inside jq evaluation.
+func NewPrimitiveRunner(source any) Runner {
+	r := NewDefaultRunner(source).(*runner)
+	r.jsonOnce.Do(func() { r.objectData = source })
+	return r
+}
+
 func NewRunner(source any, queryMaxResults *int, queryTimeoutInMilliseconds *int) Runner {
 	r := NewDefaultRunner(source).(*runner)
 
@@ -185,6 +197,9 @@ func (r *runner) compile(expression string, variables []string) (*gojq.Code, err
 	return compiled, nil
 }
 
+// convertToPrimitive canonicalizes a value to JSON shape through one
+// marshal+unmarshal. Every number becomes a float64, so integers above 2^53
+// lose precision - a known, accepted property of the whole engine.
 func convertToPrimitive(value any) (any, error) {
 	jsonBytes, err := json.Marshal(value)
 	if err != nil {

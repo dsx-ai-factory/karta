@@ -11,8 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	"github.com/run-ai/karta/internal/jq/execution"
 	"github.com/run-ai/karta/pkg/api/runai/v1alpha1"
-	"github.com/run-ai/karta/pkg/jq/execution"
 )
 
 type ComponentReader interface {
@@ -79,6 +79,14 @@ func NewComponentFactoryFromObject(karta *v1alpha1.Karta, object KubernetesObjec
 	jqRunner := execution.NewDefaultRunner(object)
 	accessor := NewAccessor(jqRunner)
 	return NewComponentFactory(karta, accessor)
+}
+
+// NewComponentFactoryFromPrimitiveObject creates a factory over an object
+// whose map holds only JSON-primitive values - the result of a runner's
+// GetObject or a json.Unmarshal. It skips the defensive JSON round-trip
+// NewComponentFactoryFromObject performs on first evaluation.
+func NewComponentFactoryFromPrimitiveObject(karta *v1alpha1.Karta, object *unstructured.Unstructured) *ComponentFactory {
+	return NewComponentFactory(karta, NewAccessor(execution.NewPrimitiveRunner(object.Object)))
 }
 
 // GetComponent retrieves a component by name
