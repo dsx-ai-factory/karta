@@ -36,10 +36,19 @@ func Rayjob() *v1alpha1.Karta {
 							MessageFieldName: ptr.To("message"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{{ByPhase: "PENDING"}},
-							Running:      []v1alpha1.StatusMatcher{{ByPhase: "RUNNING"}},
-							Completed:    []v1alpha1.StatusMatcher{{ByPhase: "SUCCEEDED"}},
-							Failed:       []v1alpha1.StatusMatcher{{ByPhase: "FAILED"}},
+							Initializing: []v1alpha1.StatusMatcher{
+								{ByPhase: "PENDING"},
+								// Before the job is submitted the operator reports the cluster bring-up
+								// through jobDeploymentStatus Initializing - a deliberate enum value,
+								// matched the same way the Suspended mapping below reads this field.
+								{ByExpression: &v1alpha1.ExpressionMatcher{
+									Expression:     `.status.jobDeploymentStatus == "Initializing"`,
+									ExpectedResult: "true",
+								}},
+							},
+							Running:   []v1alpha1.StatusMatcher{{ByPhase: "RUNNING"}},
+							Completed: []v1alpha1.StatusMatcher{{ByPhase: "SUCCEEDED"}},
+							Failed:    []v1alpha1.StatusMatcher{{ByPhase: "FAILED"}},
 							Suspended: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
 								Expression:     `.status.jobDeploymentStatus == "Suspended"`,
 								ExpectedResult: "true",
