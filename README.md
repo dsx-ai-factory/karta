@@ -1,12 +1,22 @@
 # Karta
 
+> **Repository move notice:** On September 10, 2026, the Karta repository moved
+> from the run-ai GitHub organization to
+> [`dsx-ai-factory/karta`](https://github.com/dsx-ai-factory/karta).
+> Existing repository URLs and standard Git operations continue to work through
+> GitHub redirects. If you maintain automation or integrations that reference
+> `run-ai/karta`, such as GitHub Actions, webhooks, or pinned repository URLs,
+> update them to `dsx-ai-factory/karta`. This does not apply to the Go module
+> path, used by `go get` and Go import statements, which remains
+> `github.com/run-ai/karta` until a separate module-rename change.
+
 **A standard way to describe the structure of any Kubernetes workload type.**
 
-[![CI](https://github.com/run-ai/karta/actions/workflows/ci.yaml/badge.svg)](https://github.com/run-ai/karta/actions/workflows/ci.yaml)
+[![CI](https://github.com/dsx-ai-factory/karta/actions/workflows/ci.yaml/badge.svg)](https://github.com/dsx-ai-factory/karta/actions/workflows/ci.yaml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/run-ai/karta.svg)](https://pkg.go.dev/github.com/run-ai/karta)
-[![Go Report Card](https://goreportcard.com/badge/github.com/run-ai/karta)](https://goreportcard.com/report/github.com/run-ai/karta)
-[![Latest release](https://img.shields.io/github/v/release/run-ai/karta)](https://github.com/run-ai/karta/releases)
-[![License](https://img.shields.io/github/license/run-ai/karta)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dsx-ai-factory/karta)](https://goreportcard.com/report/github.com/dsx-ai-factory/karta)
+[![Latest release](https://img.shields.io/github/v/release/dsx-ai-factory/karta)](https://github.com/dsx-ai-factory/karta/releases)
+[![License](https://img.shields.io/github/license/dsx-ai-factory/karta)](LICENSE)
 
 Karta lets you define a portable, declarative blueprint for any Kubernetes workload - whether it's a simple Deployment, a distributed PyTorchJob, or a custom CRD. Controllers and platforms can then use that blueprint to inspect, modify, and manage workloads without hard-coding knowledge of each type.
 
@@ -90,7 +100,7 @@ The structure in this view comes from Karta path expressions: the group, leader,
 ### Install the CRD
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/run-ai/karta/main/charts/karta/crds/run.ai_kartas.yaml
+kubectl apply -f https://raw.githubusercontent.com/dsx-ai-factory/karta/main/charts/karta/crds/run.ai_kartas.yaml
 ```
 
 ### Use the Go library
@@ -255,13 +265,13 @@ See [ADOPTERS.md](ADOPTERS.md) for the full list of adopters. If you use Karta, 
 
 ## Community
 
-Have a question, an idea, or want to show what you built with Karta? Join the conversation in [GitHub Discussions](https://github.com/run-ai/karta/discussions). For bugs and feature requests, [open an issue](https://github.com/run-ai/karta/issues). Discussions and issues are the channels maintainers monitor; expect an initial response within 5 business days, usually sooner.
+Have a question, an idea, or want to show what you built with Karta? Join the conversation in [GitHub Discussions](https://github.com/dsx-ai-factory/karta/discussions). For bugs and feature requests, [open an issue](https://github.com/dsx-ai-factory/karta/issues). Discussions and issues are the channels maintainers monitor; expect an initial response within 5 business days, usually sooner.
 
-New to the project? Introduce yourself in Discussions - what you are building and which workload types you care about. Good entry points are issues labeled [good first issue](https://github.com/run-ai/karta/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [help wanted](https://github.com/run-ai/karta/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22), and [CONTRIBUTING.md](CONTRIBUTING.md) covers the development workflow end to end.
+New to the project? Introduce yourself in Discussions - what you are building and which workload types you care about. Good entry points are issues labeled [good first issue](https://github.com/dsx-ai-factory/karta/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [help wanted](https://github.com/dsx-ai-factory/karta/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22), and [CONTRIBUTING.md](CONTRIBUTING.md) covers the development workflow end to end.
 
 ## Status
 
-Karta is in active development (pre-1.0). The API may change between minor versions. We welcome feedback and contributions - please [open an issue](https://github.com/run-ai/karta/issues) or [start a discussion](https://github.com/run-ai/karta/discussions).
+Karta is in active development (pre-1.0). The API may change between minor versions. We welcome feedback and contributions - please [open an issue](https://github.com/dsx-ai-factory/karta/issues) or [start a discussion](https://github.com/dsx-ai-factory/karta/discussions).
 
 ## Third-Party Software
 
