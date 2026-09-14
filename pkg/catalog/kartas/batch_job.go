@@ -43,8 +43,14 @@ func BatchJob() *v1alpha1.Karta {
 								Expression:     "(.status.active // 0) > 0 and (.status.ready // 0) > 0",
 								ExpectedResult: "true",
 							}}},
-							Completed: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Complete", Status: ptr.To("True")}}}},
-							Failed:    []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Failed", Status: ptr.To("True")}}}},
+							Completed: []v1alpha1.StatusMatcher{
+								{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Complete", Status: ptr.To("True")}}},
+								{ByConditions: []v1alpha1.ExpectedCondition{{Type: "SuccessCriteriaMet", Status: ptr.To("True")}}},
+							},
+							Failed: []v1alpha1.StatusMatcher{
+								{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Failed", Status: ptr.To("True")}}},
+								{ByConditions: []v1alpha1.ExpectedCondition{{Type: "FailureTarget", Status: ptr.To("True")}}},
+							},
 							Degraded: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
 								Expression:     ".spec.parallelism > 1 and (.status.ready // 0) < .spec.parallelism and ((.status.succeeded // 0) > 0 or (.status.failed // 0) > 0)",
 								ExpectedResult: "true",

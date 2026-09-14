@@ -28,3 +28,13 @@ func ResumeRunPolicy() *recorder.Action {
 func ScaleReplicas(n int) *recorder.Action {
 	return &recorder.Action{Type: recorder.ActionScale, Patch: []byte(fmt.Sprintf(`{"spec":{"replicas":%d}}`, n))}
 }
+
+// Resume clears spec.suspend so a suspended workload resumes.
+func Resume() *recorder.Action {
+	return &recorder.Action{Type: recorder.ActionResume, Patch: []byte(`{"spec":{"suspend":false}}`)}
+}
+
+// ScaleParallelism sets a batch Job's spec.parallelism.
+func ScaleParallelism(n int) *recorder.Action {
+	return &recorder.Action{Type: recorder.ActionScale, Patch: []byte(fmt.Sprintf(`{"spec":{"parallelism":%d}}`, n))}
+}

@@ -14,12 +14,13 @@ as it installs, so a broken install fails provisioning rather than a later run.
 hack/e2e/
   up.sh                 orchestrator: base + selected operators (install then verify)
   down.sh               tear the cluster down (and its kubeconfig for named clusters)
+  install.sh            standalone: installs the Karta operator (a subprocess)
   global.env            single source of truth for versions and runtime defaults
   kind-config.yaml      kind cluster shape (1 control-plane + 2 workers)
   operators/
     _common.sh          shared helpers + GitHub Actions logging, sourced by every script
     <name>/
-      install.sh        standalone: installs the operator (run as a subprocess)
+      install.sh        standalone: installs that workload operator (a subprocess)
       verify.sh         standalone: smoke-tests it via run_smoke
       smoke.yaml        the throwaway workload the smoke test applies
       <config>.yaml     optional co-located config (e.g. grove/values.yaml)
@@ -31,13 +32,16 @@ hack/e2e/
 make e2e-up                          # base + all operators
 make e2e-up WORKLOADS="jobset lws"   # base + a subset (one provision, deps resolved once)
 make e2e-up WORKLOADS="jobset"       # base + a single operator
+make e2e-up WORKLOADS=none           # base only, no workload operators
 make e2e-down                        # tear down
 ./hack/e2e/up.sh --list dynamo       # print the resolved plan and exit (dynamo pulls grove)
+./hack/e2e/up.sh --list none         # print the base-only plan and exit
 ```
 
-The always-on base is the kind cluster, cert-manager, the fake-gpu-operator, and
-the Karta operator. Selecting a subset keeps a run light. Dependencies are added
-automatically: kserve pulls knative, dynamo pulls grove.
+The base is the kind cluster, the fake-gpu-operator, and the Karta operator.
+Selecting a subset keeps a run light, and `none` keeps only the base, which is what
+the controller e2e wants. Dependencies are added automatically: kserve pulls
+knative, dynamo pulls grove.
 
 ## How up.sh runs an operator
 
