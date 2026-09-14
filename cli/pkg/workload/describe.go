@@ -442,6 +442,8 @@ func matchComponentType(
 		if claimsAll {
 			return pods, nil
 		}
+		// Known gap: a pod no component claims goes unlisted. The view has
+		// nowhere to put it, and omitting beats reporting it under a sibling.
 		return nil, nil
 	}
 	var matched []corev1.Pod
