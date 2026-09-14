@@ -42,8 +42,10 @@ func Jobset() *v1alpha1.Karta {
 								ExpectedResult: "true",
 							}}},
 							Running: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
-								// Total ready across all replicatedJobs equals total expected replicas.
-								Expression:     "(.status.replicatedJobsStatus // []) | any(.ready > 0 and .active > 0) and all(.failed == 0)",
+								// Working: at least one replicatedJob has active or ready pods and none
+								// have failed. Reading either count (not both) keeps the state stable
+								// while the controller briefly flaps ready to 0 mid-run.
+								Expression:     "(.status.replicatedJobsStatus // []) | any(.active > 0 or .ready > 0) and all((.failed // 0) == 0)",
 								ExpectedResult: "true",
 							}}},
 							Completed: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Completed", Status: ptr.To("True")}}}},

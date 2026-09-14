@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# Smoke test for the Karta install. ReplicaSet is deliberate on two counts: it is a
+# built-in, so CRDExists is satisfied with nothing installed, and no catalog Karta
+# roots there, so checkUniqueRootGVK cannot reject this as a duplicate.
+kind: Karta
+apiVersion: run.ai/v1alpha1
+metadata:
+  name: karta-smoke
+spec:
+  structureDefinition:
+    rootComponent:
+      name: replicaset
+      kind:
+        group: apps
+        version: v1
+        kind: ReplicaSet
+      specDefinition:
+        podTemplateSpecPath: .spec.template
+      scaleDefinition:
+        replicasPath: .spec.replicas // 1
+      statusDefinition:
+        statusMappings: {}

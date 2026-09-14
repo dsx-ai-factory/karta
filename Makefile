@@ -413,12 +413,20 @@ test-replay: ## Replay the recorded fixtures through Karta offline (no cluster)
 	cd test/e2e && go build ./...
 	cd test/e2e && go test ./replay_tests/...
 
+# Defaults and accepted values live in hack/e2e/global.env.
+KARTA_WEBHOOK_MODE ?= auto
+CERT_MANAGER ?= auto
+
 # Pick which operators to install:
 #   make e2e-up                          # everything
 #   make e2e-up WORKLOADS="jobset lws"   # a subset - one provision, deps resolved once
+#   make e2e-up WORKLOADS=none           # base only, no workload operators
 .PHONY: e2e-up
-e2e-up: ## Provision a kind cluster + operators (WORKLOADS="jobset kuberay" for a subset, or "all"; CLUSTER_NAME=<name> for an isolated parallel cluster)
-	CLUSTER_NAME=$(CLUSTER_NAME) ./hack/e2e/up.sh $(WORKLOADS)
+e2e-up: ## Provision a kind cluster + operators (WORKLOADS=<list>|all|none; KARTA_WEBHOOK_MODE=auto|cert-manager|disabled; CLUSTER_NAME for a parallel cluster)
+	CLUSTER_NAME=$(CLUSTER_NAME) \
+	KARTA_WEBHOOK_MODE=$(KARTA_WEBHOOK_MODE) \
+	CERT_MANAGER=$(CERT_MANAGER) \
+	./hack/e2e/up.sh $(WORKLOADS)
 
 .PHONY: e2e-down
 e2e-down: ## Tear down the e2e cluster (set CLUSTER_NAME for a named one)
@@ -428,6 +436,8 @@ e2e-down: ## Tear down the e2e cluster (set CLUSTER_NAME for a named one)
 # should fail here rather than minutes into a live cluster run.
 .PHONY: record-e2e
 record-e2e: ## Record the fixtures against the current cluster - kind from e2e-up or your own (WORKLOADS="pod" a subset, FLOW="running" one flow, CLUSTER_NAME for a named kind cluster)
+	@if [ "$(strip $(WORKLOADS))" = "none" ]; then \
+		echo "record-e2e: WORKLOADS=none selects no cases"; exit 2; fi
 	cd test/e2e && go test -count=1 ./recorder
 	cd test/e2e && CLUSTER_NAME=$(CLUSTER_NAME) $(E2E_KUBECONFIG) go test -count=1 -v -timeout $(E2E_TIMEOUT) ./flows $(if $(E2E_FOCUS)$(E2E_LABELS),-args $(if $(E2E_FOCUS),-ginkgo.focus="$(E2E_FOCUS)") $(if $(E2E_LABELS),-ginkgo.label-filter="$(E2E_LABELS)"))
 
@@ -438,9 +448,9 @@ verify-recordings: ## Fail if any recorded fixture ended with succeeded false (r
 	if [ -n "$$bad" ]; then echo "recordings that did not succeed:"; echo "$$bad"; exit 1; fi; \
 	echo "all recordings succeeded"
 
-# The e2e shell scripts to shellcheck: the provisioner, teardown, the shared
-# helpers, and every per-operator install.sh/verify.sh.
-E2E_SHELL := hack/e2e/up.sh hack/e2e/down.sh \
+# The e2e shell scripts to shellcheck: the provisioner, teardown, the Karta install,
+# the shared helpers, and every per-operator install.sh/verify.sh.
+E2E_SHELL := hack/e2e/up.sh hack/e2e/down.sh hack/e2e/install.sh hack/e2e/verify.sh \
 	hack/e2e/operators/_common.sh \
 	$(wildcard hack/e2e/operators/*/install.sh) \
 	$(wildcard hack/e2e/operators/*/verify.sh)

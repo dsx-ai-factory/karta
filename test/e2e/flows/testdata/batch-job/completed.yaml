@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# A batch/v1 Job that runs briefly and succeeds. The completed flow observes it move Initializing ->
+# Running -> Completed. sleep 20 with a readiness probe gives a stable Initializing then Running
+# window before the Job reports Complete.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: karta-e2e-job-completed
+  namespace: default
+spec:
+  parallelism: 1
+  completions: 1
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: worker
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 20"]
+          readinessProbe:
+            exec:
+              command: ["true"]
+            initialDelaySeconds: 6
+            periodSeconds: 2
+          resources:
+            requests: {cpu: 50m, memory: 32Mi}
