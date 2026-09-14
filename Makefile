@@ -42,11 +42,11 @@ ENVTEST             ?= $(LOCALBIN)/setup-envtest-$(ENVTEST_VERSION)
 
 GOLANGCI_LINT_FLAGS ?= $(if $(VERBOSE),-v)
 
-# Container image settings (defaults for ghcr.io/run-ai/karta OSS publishing).
+# Container image settings (defaults for ghcr.io/dsx-ai-factory/karta OSS publishing).
 # Override any component from the command line, e.g.:
 #   make operator-image IMAGE_TAG=v1.2.3
 #   make operator-image IMAGE_REGISTRY=ghcr.io/myorg/karta
-IMAGE_REGISTRY ?= ghcr.io/run-ai/karta
+IMAGE_REGISTRY ?= ghcr.io/dsx-ai-factory/karta
 IMAGE_NAME     ?= karta-operator
 IMAGE_TAG      ?= $(VERSION)
 IMAGE          ?= $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
