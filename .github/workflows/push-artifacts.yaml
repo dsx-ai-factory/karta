@@ -84,7 +84,7 @@ jobs:
 
       - name: Build helm chart
         run: |
-          helm package ./charts/karta -d ./charts \f
+          helm package ./charts/karta -d ./charts \
             --version "$PACKAGE_VERSION" \
             --app-version "$PACKAGE_VERSION"
 
