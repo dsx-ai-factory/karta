@@ -30,6 +30,11 @@ func KnativeServing() *v1alpha1.Karta {
 						},
 						StatusMappings: v1alpha1.StatusMappings{
 							Running: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("True")}}}},
+							// Knative reports the whole deploy through Ready=Unknown (reasons OutOfDate,
+							// RevisionMissing, IngressNotConfigured, Uninitialized) and a broken Service
+							// through Ready=False - both deliberate signals, matched as written.
+							Initializing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("Unknown")}}}},
+							Failed:       []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{{Type: "Ready", Status: ptr.To("False")}}}},
 						},
 					},
 				},
