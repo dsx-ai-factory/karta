@@ -22,6 +22,7 @@ import (
 	"github.com/run-ai/karta/cli/pkg/definitions"
 	"github.com/run-ai/karta/pkg/api/runai/v1alpha1"
 	"github.com/run-ai/karta/pkg/catalog"
+	"github.com/run-ai/karta/pkg/resource"
 )
 
 // describeFixture resolves a manifest from testdata through the built-in
@@ -377,6 +378,70 @@ spec:
 		Expect(view.Components[0].Pods).To(HaveLen(1))
 	})
 
+	// A definition may set several fragmented paths at once, and a container
+	// override that declares no resources must not hide the request the CR
+	// states at its own level.
+	It("reads the CR-level request when a container override declares none", func() {
+		view := describeObject([]byte(`
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: my-pipeline
+  namespace: ml-team
+spec:
+  services:
+    Frontend:
+      replicas: 1
+      resources:
+        requests:
+          nvidia.com/gpu: "4"
+      extraPodSpec:
+        mainContainer:
+          name: main
+          image: svc:v1
+`))
+
+		Expect(view.Resources.GPUs).To(Equal(int64(4)))
+	})
+
+	// Containers and Container name different containers, so a definition
+	// setting both is declaring two, not restating one.
+	It("sums the containers a fragmented spec names through separate paths", func() {
+		request := fragmentedRequest(resource.FragmentedPodSpec{
+			Containers: []corev1.Container{gpuContainer("2")},
+			Container:  ptr.To(gpuContainer("3")),
+			Resources: &corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{gpuResourceName: resourceQuantity("99")},
+			},
+		})
+
+		Expect(request.GPUs).To(Equal(int64(5)), "the CR-level request restates what the containers declare")
+	})
+
+	// One instance is still an instance: a component whose pods are told apart
+	// by instance id must filter by it even when the spec is down to one, or a
+	// pod left over from a removed instance lands on the survivor.
+	It("filters by instance when a component resolves to a single instance", func() {
+		view := describeObject([]byte(`
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: my-pipeline
+  namespace: ml-team
+spec:
+  services:
+    Frontend:
+      replicas: 1
+`),
+			dynamoPod("frontend-0", "Frontend"),
+			dynamoPod("prefill-0-terminating", "PrefillWorker"))
+
+		frontend := componentNamed(view.Components, "Frontend")
+		Expect(frontend).NotTo(BeNil(), "the row is named for the instance, as it is with several")
+		Expect(frontend.Pods).To(HaveLen(1))
+		Expect(frontend.Pods[0].Name).To(Equal("frontend-0"))
+	})
+
 	It("sums cpu as millicores and memory as bytes", func() {
 		view := describeObject([]byte(`
 apiVersion: apps/v1
@@ -416,9 +481,24 @@ func describeObject(manifest []byte, pods ...corev1.Pod) *DescribeView {
 	return view
 }
 
+// dynamoPod carries the label the Dynamo instance selector reads.
+func dynamoPod(name, service string) corev1.Pod {
+	return livePod(name, "node-01", map[string]string{"nvidia.com/dynamo-component": service}, "0")
+}
+
 // milvusPod carries the label Milvus component selectors read.
 func milvusPod(name, component string) corev1.Pod {
 	return livePod(name, "node-01", map[string]string{"app.kubernetes.io/component": component}, "0")
+}
+
+// gpuContainer is a container whose only declared request is gpus.
+func gpuContainer(gpus string) corev1.Container {
+	return corev1.Container{
+		Name: "main",
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{gpuResourceName: resourceQuantity(gpus)},
+		},
+	}
 }
 
 // resourceQuantity parses a quantity a fixture spells as a string.

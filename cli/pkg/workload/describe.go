@@ -59,6 +59,10 @@ type Replicas struct {
 	Ready   int32 `json:"ready"`
 }
 
+func (r Replicas) isEmpty() bool {
+	return r == Replicas{}
+}
+
 // PodView is one live pod attributed to a component.
 type PodView struct {
 	Name  string `json:"name"`
@@ -83,6 +87,10 @@ func (r *Resources) add(other Resources) {
 	r.GPUs += other.GPUs
 	r.CPUMillis += other.CPUMillis
 	r.MemoryBytes += other.MemoryBytes
+}
+
+func (r Resources) isEmpty() bool {
+	return r == Resources{}
 }
 
 func (r Resources) scaled(replicas int32) Resources {
@@ -345,15 +353,15 @@ func (c *ComponentView) attach(pods []corev1.Pod) {
 // appendComponent drops plumbing the workload never populated, such as a
 // Deployment's ReplicaSet. A pod-bearing component stays even at zero replicas.
 func appendComponent(components []ComponentView, component ComponentView, podBearing bool) []ComponentView {
-	if !podBearing && component.empty() {
+	if !podBearing && component.isEmpty() {
 		return components
 	}
 	return append(components, component)
 }
 
-func (c ComponentView) empty() bool {
+func (c ComponentView) isEmpty() bool {
 	return len(c.Pods) == 0 && len(c.Children) == 0 &&
-		c.Replicas == Replicas{} && c.Resources == Resources{}
+		c.Replicas.isEmpty() && c.Resources.isEmpty()
 }
 
 // aggregate folds a child's totals into a parent that wraps it.
@@ -404,9 +412,6 @@ func mergeNodes(existing, add []string) []string {
 // isMultiInstance reports a component whose instances are told apart by an
 // instance key or a replica key, and so render as one row each.
 func isMultiInstance(instances []tree.InstanceNode) bool {
-	if len(instances) <= 1 {
-		return false
-	}
 	for _, instance := range instances {
 		if instance.InstanceKey != nil || instance.ReplicaKey != nil {
 			return true
@@ -516,17 +521,19 @@ func requestOf(instance resource.ExtractedInstance) Resources {
 	}
 }
 
+// fragmentedRequest sums a fragmented spec. A definition may set several of
+// these paths at once: Containers and Container name different containers, so
+// they add, while Resources states the same pod's request at the CR level and
+// only counts when no container declared one.
 func fragmentedRequest(spec resource.FragmentedPodSpec) Resources {
-	switch {
-	case len(spec.Containers) > 0:
-		return sumContainers(spec.Containers)
-	case spec.Container != nil:
-		return sumContainers([]corev1.Container{*spec.Container})
-	case spec.Resources != nil:
-		return requirementsOf(*spec.Resources)
-	default:
-		return Resources{}
+	total := sumContainers(spec.Containers)
+	if spec.Container != nil {
+		total.add(sumContainers([]corev1.Container{*spec.Container}))
 	}
+	if total.isEmpty() && spec.Resources != nil {
+		return requirementsOf(*spec.Resources)
+	}
+	return total
 }
 
 // podRequest mirrors the effective pod request Kubernetes schedules against:
