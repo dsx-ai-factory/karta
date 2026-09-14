@@ -49,6 +49,8 @@ events:
     status:
       phase: Pending
       qosClass: Burstable
+  phases:
+  - Initializing
   resourceVersion: "14601"
   state: Initializing
 flow: initializing
@@ -58,5 +60,9 @@ operator: pod
 result:
   succeeded: true
 schemaVersion: 1
+summary:
+- amount: 1
+  phases:
+  - Initializing
 version: v1.34.0
 want: Initializing

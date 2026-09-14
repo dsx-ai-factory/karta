@@ -6,7 +6,7 @@ import { afterEach, beforeAll, describe, expect, it, type MockInstance,vi } from
 const { request } = vi.hoisted(() => ({ request: vi.fn() }));
 vi.mock('@kinvolk/headlamp-plugin/lib', () => ({ ApiProxy: { request } }));
 
-import { loadScriptViaApiProxy } from './engine';
+import { getKartaWasm, loadScriptViaApiProxy } from './karta';
 
 const PATH = '/plugins/karta/wasm_exec.js';
 
@@ -62,5 +62,60 @@ describe('loadScriptViaApiProxy', () => {
     script.onerror?.(new Event('error'));
 
     await expect(loaded).rejects.toThrow('failed to load');
+  });
+});
+
+describe('getKartaWasm', () => {
+  beforeAll(() => {
+    if (!URL.createObjectURL) URL.createObjectURL = vi.fn();
+    if (!URL.revokeObjectURL) URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.head.innerHTML = '';
+    delete (window as Partial<Window>).Go;
+    delete (window as Partial<Window>).karta;
+  });
+
+  // Drives instantiate() up to (but not through) WebAssembly.instantiateStreaming:
+  // jsdom never executes injected blob: script content (see getInjectedScript's
+  // comment above), so the Go runtime is stubbed directly rather than relying on
+  // wasm_exec.js actually running.
+  async function driveToInstantiateStreaming(runSpy: ReturnType<typeof vi.fn>) {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://localhost/wasm-exec');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    request.mockImplementation((path: string) => {
+      if (path === '/plugins') return Promise.resolve([]);
+      if (path.endsWith('wasm_exec.js')) return Promise.resolve({ text: () => Promise.resolve('') });
+      if (path.endsWith('karta.wasm')) return Promise.resolve({} as Response);
+      return Promise.reject(new Error(`unexpected request: ${path}`));
+    });
+    const appendChild = vi.spyOn(document.head, 'appendChild');
+
+    const promise = getKartaWasm();
+    const script = await getInjectedScript(appendChild);
+    window.Go = class {
+      importObject: WebAssembly.Imports = {};
+      run(instance: WebAssembly.Instance) {
+        return runSpy(instance);
+      }
+    } as unknown as new () => { importObject: WebAssembly.Imports; run(i: WebAssembly.Instance): Promise<void> };
+    script.onload?.(new Event('load'));
+
+    return promise;
+  }
+
+  it('logs and rejects when instantiateStreaming fails, without ever calling go.run', async () => {
+    const instantiateError = new Error('bad content type');
+    vi.spyOn(WebAssembly, 'instantiateStreaming').mockRejectedValue(instantiateError);
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const runSpy = vi.fn();
+
+    const karta = driveToInstantiateStreaming(runSpy);
+
+    await expect(karta).rejects.toThrow('bad content type');
+    expect(consoleError).toHaveBeenCalledWith('karta: failed to instantiate the WASM module', instantiateError);
+    expect(runSpy).not.toHaveBeenCalled();
   });
 });

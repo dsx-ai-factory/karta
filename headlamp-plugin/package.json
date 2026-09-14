@@ -23,8 +23,8 @@
   ],
   "headlamp": {
     "extraDist": {
-      "karta.wasm": "../wasm-engine/karta.wasm",
-      "wasm_exec.js": "../wasm-engine/wasm_exec.js"
+      "karta.wasm": "../karta-wasm/karta.wasm",
+      "wasm_exec.js": "../karta-wasm/wasm_exec.js"
     }
   },
   "prettier": "@headlamp-k8s/eslint-config/prettier-config",

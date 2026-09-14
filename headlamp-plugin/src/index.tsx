@@ -3,7 +3,7 @@
 
 import { registerRoute, registerSidebarEntry } from '@kinvolk/headlamp-plugin/lib';
 import { useEffect, useState } from 'react';
-import { getKartaEngine } from './lib/engine';
+import { getKartaWasm } from './lib/karta';
 
 registerSidebarEntry({
   parent: null,
@@ -14,22 +14,19 @@ registerSidebarEntry({
 });
 
 function WorkloadsPlaceholder() {
-  const [engineVersion, setEngineVersion] = useState<string | null>(null);
-  const [engineError, setEngineError] = useState<string | null>(null);
+  const [wasmLoaded, setWasmLoaded] = useState(false);
+  const [wasmError, setWasmError] = useState<string | null>(null);
 
   useEffect(() => {
-    getKartaEngine()
-      .then(engine => setEngineVersion(engine.version()))
-      .catch(err => setEngineError(err instanceof Error ? err.message : String(err)));
+    getKartaWasm()
+      .then(() => setWasmLoaded(true))
+      .catch(err => setWasmError(err instanceof Error ? err.message : String(err)));
   }, []);
 
   return (
     <div>
       <p>Karta workloads — coming soon.</p>
-      <p>
-        WASM engine:{' '}
-        {engineError ? `unavailable (${engineError})` : (engineVersion ?? 'loading…')}
-      </p>
+      <p>WASM engine: {wasmError ? `unavailable (${wasmError})` : wasmLoaded ? 'ready' : 'loading…'}</p>
     </div>
   );
 }

@@ -1,0 +1,136 @@
+events:
+- kind: STATE
+  object:
+    apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      creationTimestamp: "2026-09-08T15:21:50Z"
+      generation: 1
+      name: karta-e2e-cronjob-suspended
+      namespace: test-mrsft
+      uid: 92527ddf-770a-442a-9ed3-c47412204aa3
+    spec:
+      concurrencyPolicy: Allow
+      failedJobsHistoryLimit: 1
+      jobTemplate:
+        metadata: {}
+        spec:
+          template:
+            metadata: {}
+            spec:
+              containers:
+              - command:
+                - sh
+                - -c
+                - sleep 30
+                image: busybox:1.36
+                imagePullPolicy: IfNotPresent
+                name: worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 32Mi
+                terminationMessagePath: /dev/termination-log
+                terminationMessagePolicy: File
+              dnsPolicy: ClusterFirst
+              restartPolicy: Never
+              schedulerName: default-scheduler
+              securityContext: {}
+              terminationGracePeriodSeconds: 30
+      schedule: '* * * * *'
+      successfulJobsHistoryLimit: 3
+      suspend: false
+    status:
+      active:
+      - apiVersion: batch/v1
+        kind: Job
+        name: karta-e2e-cronjob-suspended-29814682
+        namespace: test-mrsft
+        resourceVersion: "2005"
+        uid: b404d9ed-7bda-42eb-992b-80057a167ab5
+      lastScheduleTime: "2026-09-08T15:22:00Z"
+  phases:
+  - Running
+  resourceVersion: "2007"
+  state: Running
+- action:
+    name: Suspend
+    operation:
+      patchType: application/merge-patch+json
+      payload:
+        spec:
+          suspend: true
+      verb: PATCH
+  kind: ACTION
+- kind: STATE
+  object:
+    apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      creationTimestamp: "2026-09-08T15:21:50Z"
+      generation: 2
+      name: karta-e2e-cronjob-suspended
+      namespace: test-mrsft
+      uid: 92527ddf-770a-442a-9ed3-c47412204aa3
+    spec:
+      concurrencyPolicy: Allow
+      failedJobsHistoryLimit: 1
+      jobTemplate:
+        metadata: {}
+        spec:
+          template:
+            metadata: {}
+            spec:
+              containers:
+              - command:
+                - sh
+                - -c
+                - sleep 30
+                image: busybox:1.36
+                imagePullPolicy: IfNotPresent
+                name: worker
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 32Mi
+                terminationMessagePath: /dev/termination-log
+                terminationMessagePolicy: File
+              dnsPolicy: ClusterFirst
+              restartPolicy: Never
+              schedulerName: default-scheduler
+              securityContext: {}
+              terminationGracePeriodSeconds: 30
+      schedule: '* * * * *'
+      successfulJobsHistoryLimit: 3
+      suspend: true
+    status:
+      active:
+      - apiVersion: batch/v1
+        kind: Job
+        name: karta-e2e-cronjob-suspended-29814682
+        namespace: test-mrsft
+        resourceVersion: "2005"
+        uid: b404d9ed-7bda-42eb-992b-80057a167ab5
+      lastScheduleTime: "2026-09-08T15:22:00Z"
+  phases:
+  - Running
+  - Suspended
+  resourceVersion: "2010"
+  state: Suspended
+flow: suspended
+kartaFile: docs/catalog/batch-cronjob-v1.yaml
+kartaName: batch-cronjob-v1
+operator: cronjob
+result:
+  succeeded: true
+schemaVersion: 1
+summary:
+- amount: 1
+  phases:
+  - Running
+- amount: 1
+  phases:
+  - Running
+  - Suspended
+version: v1.34.0
+want: Suspended

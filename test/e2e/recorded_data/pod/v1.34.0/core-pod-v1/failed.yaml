@@ -67,6 +67,8 @@ events:
         type: PodScheduled
       phase: Pending
       qosClass: Burstable
+  phases:
+  - Initializing
   resourceVersion: "14423"
   state: Initializing
 - kind: STATE
@@ -191,6 +193,8 @@ events:
       phase: Pending
       qosClass: Burstable
       startTime: "2026-08-18T12:38:00Z"
+  phases:
+  - Initializing
   resourceVersion: "14425"
   state: Initializing
 - kind: STATE
@@ -333,6 +337,8 @@ events:
       - ip: 10.244.2.56
       qosClass: Burstable
       startTime: "2026-08-18T12:38:00Z"
+  phases:
+  - Initializing
   resourceVersion: "14436"
   state: Initializing
 - kind: STATE
@@ -477,6 +483,8 @@ events:
       - ip: 10.244.2.56
       qosClass: Burstable
       startTime: "2026-08-18T12:38:00Z"
+  phases:
+  - Initializing
   resourceVersion: "14500"
   state: Initializing
 - kind: STATE
@@ -632,6 +640,8 @@ events:
       - ip: 10.244.2.56
       qosClass: Burstable
       startTime: "2026-08-18T12:38:00Z"
+  phases:
+  - Running
   resourceVersion: "14512"
   state: Running
 - kind: STATE
@@ -793,6 +803,8 @@ events:
       - ip: 10.244.2.56
       qosClass: Burstable
       startTime: "2026-08-18T12:38:00Z"
+  phases:
+  - Running
   resourceVersion: "14590"
   state: Running
 - kind: STATE
@@ -954,6 +966,8 @@ events:
       - ip: 10.244.2.56
       qosClass: Burstable
       startTime: "2026-08-18T12:38:00Z"
+  phases:
+  - Failed
   resourceVersion: "14598"
   state: Failed
 flow: failed
@@ -963,5 +977,15 @@ operator: pod
 result:
   succeeded: true
 schemaVersion: 1
+summary:
+- amount: 4
+  phases:
+  - Initializing
+- amount: 2
+  phases:
+  - Running
+- amount: 1
+  phases:
+  - Failed
 version: v1.34.0
 want: Failed

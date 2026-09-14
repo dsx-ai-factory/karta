@@ -14,11 +14,11 @@ bindings land in follow-up work.
 
 ## How the WASM engine is built and loaded
 
-[`wasm-engine/`](../wasm-engine/) (repository root, a sibling of this
+[`karta-wasm/`](../karta-wasm/) (repository root, a sibling of this
 directory) is a separate Go module compiled to WebAssembly
 (`GOOS=js GOARCH=wasm`) and shipped as a plugin asset via the
 `headlamp.extraDist` entry in `package.json`, which points at
-`../wasm-engine/karta.wasm` and `../wasm-engine/wasm_exec.js`. It lives
+`../karta-wasm/karta.wasm` and `../karta-wasm/wasm_exec.js`. It lives
 outside `headlamp-plugin/` so it can be reused by other consumers later
 without being tied to this specific plugin. At runtime, `src/lib/engine.ts`
 fetches `wasm_exec.js` and `karta.wasm` from wherever Headlamp served this
@@ -30,16 +30,16 @@ for the details.
 Requires Node.js >= 22, npm, and Go (for the WebAssembly build).
 
 ```bash
-make wasm-engine   # from the repository root; builds wasm-engine/karta.wasm + wasm-engine/wasm_exec.js
+make karta-wasm   # from the repository root; builds karta-wasm/karta.wasm + karta-wasm/wasm_exec.js
 npm install
 npm start
 ```
 
 `npm start` watches `src/` and rebuilds the plugin bundle on change, copying
-in the `wasm-engine/` build artifacts (via `extraDist`) into Headlamp's
+in the `karta-wasm/` build artifacts (via `extraDist`) into Headlamp's
 plugin directory. It does not watch Go source or rerun `make
-wasm-engine` for you, after editing `../wasm-engine/main.go`, rerun
-`make wasm-engine` from the repository root, then save any file
+karta-wasm` for you, after editing `../karta-wasm/main.go`, rerun
+`make karta-wasm` from the repository root, then save any file
 under `src/` (or restart `npm start`) to pick up the new binary.
 
 Headlamp only reads its plugin directory at startup, so after the very first
@@ -64,10 +64,10 @@ push/PR to `main`/`v0.*`, regardless of which files changed. It runs
 `make headlamp-plugin-build` from the repository root, which is:
 
 ```bash
-make wasm-engine   # go build the WASM module
+make karta-wasm   # go build the WASM module
 npm ci
 npm run lint
 npm run tsc
 npm run test
-npm run build      # production vite build; extraDist copies wasm-engine/karta.wasm + wasm_exec.js into dist/
+npm run build      # production vite build; extraDist copies karta-wasm/karta.wasm + wasm_exec.js into dist/
 ```

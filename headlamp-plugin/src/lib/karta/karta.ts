@@ -6,10 +6,20 @@ import { ApiProxy } from '@kinvolk/headlamp-plugin/lib';
 const PLUGIN_NAME = 'karta';
 const WASM_EXPORTS_TIMEOUT_MS = 3000;
 
-export type VersionFn = () => string;
+export interface Envelope {
+  data: string | null;
+  error: string | null;
+}
 
-export interface KartaEngine {
-  version: VersionFn;
+/**
+ * The raw bindings the WASM module sets on window.karta. Arguments and results
+ * are JSON strings; kartaUtil wraps them in typed calls.
+ */
+export interface KartaWasm {
+  /** Builds the workload tree. Returns a WorkloadTree, including the root status. */
+  buildTree(definitionJSON: string, workloadJSON: string): Envelope;
+  /** Returns the definitions built into the module, as Karta[]. */
+  listCatalog(): Envelope;
 }
 
 interface GoRuntime {
@@ -20,7 +30,7 @@ interface GoRuntime {
 declare global {
   interface Window {
     Go?: new () => GoRuntime;
-    kartaVersion?: VersionFn;
+    karta?: KartaWasm;
   }
 }
 
@@ -63,18 +73,22 @@ async function findPluginBase(): Promise<string> {
   return `plugins/${PLUGIN_NAME}`;
 }
 
-async function waitForExports(): Promise<KartaEngine> {
+function isKartaLoaded(karta?: KartaWasm): karta is KartaWasm {
+  return !!karta;
+}
+
+async function waitForExports(): Promise<KartaWasm> {
   const deadline = Date.now() + WASM_EXPORTS_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    if (typeof window.kartaVersion === 'function') {
-      return { version: window.kartaVersion };
+    if (isKartaLoaded(window.karta)) {
+      return window.karta;
     }
     await new Promise(resolve => setTimeout(resolve, 10));
   }
   throw new Error('the WebAssembly module did not register its exports');
 }
 
-async function instantiate(): Promise<KartaEngine> {
+async function instantiate(): Promise<KartaWasm> {
   const base = await findPluginBase();
 
   await loadScriptViaApiProxy(`/${base}/wasm_exec.js`);
@@ -92,26 +106,24 @@ async function instantiate(): Promise<KartaEngine> {
 
   let instance: WebAssembly.Instance;
   try {
-    ({ instance } = await WebAssembly.instantiateStreaming(wasmResp.clone(), go.importObject));
-  } catch {
-    // instantiateStreaming requires an application/wasm content type; fall
-    // back to buffering for servers that mislabel it.
-    const buffer = await wasmResp.arrayBuffer();
-    ({ instance } = await WebAssembly.instantiate(buffer, go.importObject));
+    ({ instance } = await WebAssembly.instantiateStreaming(wasmResp, go.importObject));
+  } catch (err) {
+    console.error('karta: failed to instantiate the WASM module', err);
+    throw err;
   }
 
   go.run(instance);
   return waitForExports();
 }
 
-let enginePromise: Promise<KartaEngine> | null = null;
+let kartaWasmPromise: Promise<KartaWasm> | null = null;
 
-export function getKartaEngine(): Promise<KartaEngine> {
-  if (!enginePromise) {
-    enginePromise = instantiate().catch(err => {
-      enginePromise = null;
+export function getKartaWasm(): Promise<KartaWasm> {
+  if (!kartaWasmPromise) {
+    kartaWasmPromise = instantiate().catch(err => {
+      kartaWasmPromise = null;
       throw err;
     });
   }
-  return enginePromise;
+  return kartaWasmPromise;
 }

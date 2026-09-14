@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 NVIDIA Corporation
+#
+# A real Grove PodCliqueSet driven by the Grove operator (installed by
+# hack/e2e/up.sh alongside kai-scheduler). The operator creates the clique's
+# pods and reports availableReplicas once they are running; the test waits for
+# that. Kept tiny (busybox sleeping) so it runs CPU-only on local kind.
+apiVersion: grove.io/v1alpha1
+kind: PodCliqueSet
+metadata:
+  name: karta-e2e-grove
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    cliques:
+      - name: worker
+        spec:
+          roleName: worker
+          replicas: 2
+          podSpec:
+            containers:
+              - name: worker
+                image: busybox:1.36
+                command: ["/bin/sh", "-c", "echo karta-e2e-grove && sleep infinity"]
+                resources:
+                  requests:
+                    cpu: 20m
+                    memory: 32Mi

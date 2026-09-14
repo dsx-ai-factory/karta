@@ -15,7 +15,10 @@ import (
 //  1. Consecutive duplicate observations collapse to one visit; an empty
 //     observation list always fails.
 //  2. The last observed state must equal the expected terminal.
-//  3. The collapsed walk must be the journey with zero or more absent-allowed
+//  3. Undefined visits before the terminal are dropped from the walk: a frame
+//     no predicate matched is a coverage gap, not a transition the workload
+//     made. A run that ends Undefined still fails rule 2.
+//  4. The collapsed walk must be the journey with zero or more absent-allowed
 //     steps removed, in order, nothing extra. A step is allowed to be absent
 //     when it is Optional, or when its state already appears earlier in the
 //     journey: the recorder collapses duplicates, so a declared revisit can
@@ -33,17 +36,14 @@ func validateObservedOrder(journey []journeyStep, observed []kartav1alpha1.Resou
 		return fmt.Errorf("no states observed (journey %v)", journeyStates)
 	}
 
-	// Collapse consecutive duplicate observations: dwelling in a state is one visit.
-	visits := make([]kartav1alpha1.ResourceStatus, 0, len(observed))
-	for _, state := range observed {
-		if len(visits) == 0 || visits[len(visits)-1] != state {
-			visits = append(visits, state)
-		}
-	}
+	visits := visitsOf(observed)
 	if lastVisit := visits[len(visits)-1]; lastVisit != expectedTerminal {
 		return fmt.Errorf("last observed state is %q, expected terminal %q (journey %v, observed %v)",
 			lastVisit, expectedTerminal, journeyStates, visits)
 	}
+	visits = visitsOf(slices.DeleteFunc(visits, func(state kartav1alpha1.ResourceStatus) bool {
+		return state == kartav1alpha1.UndefinedStatus
+	}))
 
 	// Match the journey against the visits, in order: every journey step either matches the next
 	// unmatched visit, or must be allowed to be absent from the walk.
@@ -67,4 +67,14 @@ func validateObservedOrder(journey []journeyStep, observed []kartav1alpha1.Resou
 			visits[nextUnmatchedVisit], journeyStates, visits)
 	}
 	return nil
+}
+
+func visitsOf(observed []kartav1alpha1.ResourceStatus) []kartav1alpha1.ResourceStatus {
+	visits := make([]kartav1alpha1.ResourceStatus, 0, len(observed))
+	for _, state := range observed {
+		if len(visits) == 0 || visits[len(visits)-1] != state {
+			visits = append(visits, state)
+		}
+	}
+	return visits
 }

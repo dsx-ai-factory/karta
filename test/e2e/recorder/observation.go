@@ -35,12 +35,14 @@ type observation struct {
 	failure   string                     // why the flow did not finish, empty if it did
 }
 
-// snapshot is one recorded CR: the state read from its own fields, the object, and any action performed at it.
+// snapshot is one recorded CR: the phases read from its own fields (state is the strongest of them), the
+// object, and any action performed at it.
 type snapshot struct {
 	state                   kartav1alpha1.ResourceStatus
+	phases                  []kartav1alpha1.ResourceStatus
 	cr                      *unstructured.Unstructured
 	action                  *RecordedAction
-	staleObservedGeneration bool // the controller had not observed the spec yet; recorded, but never judged
+	staleObservedGeneration bool // the controller had not observed the spec yet; recorded, but outside the order-checked walk
 }
 
 // watchAndAct watches the workload until the flow finishes or fails, recording each CR it sees and acting
@@ -115,14 +117,10 @@ func (f *Flow) startWatch(ctx context.Context, workload *unstructured.Unstructur
 // terminal state, or an action failed (the failure itself is in o.failure).
 func (o *observation) record(ctx context.Context, cr *unstructured.Unstructured) (stop bool) {
 	o.lastSeen = cr
-	state := classify(cr, o.flow.rec.states)
-	if state == "" {
-		// A CR we cannot classify is a real gap: keep it as Undefined so an observed frame fails the order
-		// check and the run is saved for triage, rather than skipping it silently.
-		state = kartav1alpha1.UndefinedStatus
-	}
+	phases := judge(cr, o.flow.rec.states)
+	state := Strongest(phases)
 	observed := hasObservedCurrentGeneration(cr)
-	o.keep(cr, state, observed)
+	o.keep(cr, phases, observed)
 	if !observed {
 		return false
 	}
@@ -135,13 +133,18 @@ func (o *observation) record(ctx context.Context, cr *unstructured.Unstructured)
 
 // keep appends cr as a new snapshot, unless it duplicates the last kept one (same content once the volatile
 // fields are stripped).
-func (o *observation) keep(cr *unstructured.Unstructured, state kartav1alpha1.ResourceStatus, observed bool) {
+func (o *observation) keep(cr *unstructured.Unstructured, phases []kartav1alpha1.ResourceStatus, observed bool) {
 	sig := stripVolatileFields(cr)
 	if o.lastSig != nil && reflect.DeepEqual(o.lastSig, sig) {
 		return
 	}
 	o.lastSig = sig
-	o.snapshots = append(o.snapshots, snapshot{state: state, cr: cr.DeepCopy(), staleObservedGeneration: !observed})
+	o.snapshots = append(o.snapshots, snapshot{
+		state:                   Strongest(phases),
+		phases:                  phases,
+		cr:                      cr.DeepCopy(),
+		staleObservedGeneration: !observed,
+	})
 }
 
 // advanceStep performs the next pending step's action if the workload just reached its state and gate, then
