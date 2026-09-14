@@ -6,7 +6,7 @@ godebug fips140=off
 
 require (
 	github.com/go-logr/logr v1.4.4
-	github.com/onsi/ginkgo/v2 v2.32.1
+	github.com/onsi/ginkgo/v2 v2.32.2
 	github.com/onsi/gomega v1.43.0
 	github.com/open-policy-agent/cert-controller v0.16.0
 	github.com/run-ai/karta v0.0.0
