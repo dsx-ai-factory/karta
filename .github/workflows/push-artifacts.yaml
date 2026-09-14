@@ -14,7 +14,7 @@ permissions:
   packages: write
 
 env:
-  HELM_REGISTRY: "ghcr.io/run-ai/karta"
+  HELM_REGISTRY: "ghcr.io/dsx-ai-factory/karta"
 
 jobs:
   build-and-push:
