@@ -36,10 +36,19 @@ func StatefulSet() *v1alpha1.Karta {
 								Expression:     "(.status.readyReplicas // 0) > 0 and (.status.readyReplicas // 0) < (.spec.replicas // 1) and (.status.updatedReplicas // 0) == (.spec.replicas // 1) and (.status.currentRevision == .status.updateRevision) and (.status.observedGeneration // 0) == (.metadata.generation // 0)",
 								ExpectedResult: "true",
 							}}},
-							Initializing: []v1alpha1.StatusMatcher{{ByExpression: &v1alpha1.ExpressionMatcher{
-								Expression:     "(.spec.replicas // 1) > 0 and ((.status.observedGeneration // 0) != (.metadata.generation // 0) or (.status.readyReplicas // 0) == 0 or (.status.updatedReplicas // 0) != (.spec.replicas // 1) or (.status.currentRevision != .status.updateRevision))",
-								ExpectedResult: "true",
-							}}},
+							Initializing: []v1alpha1.StatusMatcher{
+								// Scale-down: the controller has acknowledged the new spec (generation
+								// caught up) while more pods are ready than desired - the extras are
+								// still draining.
+								{ByExpression: &v1alpha1.ExpressionMatcher{
+									Expression:     ".status.observedGeneration == .metadata.generation and .status.readyReplicas > (.spec.replicas // 1)",
+									ExpectedResult: "true",
+								}},
+								{ByExpression: &v1alpha1.ExpressionMatcher{
+									Expression:     "(.spec.replicas // 1) > 0 and ((.status.observedGeneration // 0) != (.metadata.generation // 0) or (.status.readyReplicas // 0) == 0 or (.status.updatedReplicas // 0) != (.spec.replicas // 1) or (.status.currentRevision != .status.updateRevision))",
+									ExpectedResult: "true",
+								}},
+							},
 						},
 					},
 				},
