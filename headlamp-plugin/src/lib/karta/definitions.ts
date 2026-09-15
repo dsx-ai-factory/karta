@@ -23,24 +23,35 @@ export const KartaCR = K8s.crd.makeCustomResourceClass({
 
 // rootGVKKey mirrors pkg/catalog.RootKey's key shape, so a cluster CR and a
 // catalog entry describing the same workload kind collide on the same key.
-export function rootGVKKey(karta: Karta): string {
+// Group is empty for core kinds such as Pod, but pkg/catalog requires a version
+// and a kind: without them the definition names no workload, so it has no key.
+export function rootGVKKey(karta: Karta): string | null {
   const kind = karta.spec.structureDefinition.rootComponent.kind;
-  if (!kind) {
-    return '';
+  if (!kind?.version || !kind.kind) {
+    return null;
   }
   return `${kind.group}/${kind.version}, Kind=${kind.kind}`;
 }
 
 // mergeDefinitions indexes catalogKartas by their root GVK, then lets
 // clusterKartas overwrite any catalog entry claiming the same GVK — cluster
-// definitions take priority, catalog-only kinds are still surfaced.
+// definitions take priority, catalog-only kinds are still surfaced. A
+// definition with no root GVK matches no workload, so it is left out rather
+// than merged with every other one under a shared key.
 export function mergeDefinitions(catalogKartas: Karta[], clusterKartas: Karta[]): Definition[] {
   const byKey = new Map<string, Definition>();
-  for (const karta of catalogKartas) {
-    byKey.set(rootGVKKey(karta), { karta, origin: 'catalog' });
-  }
-  for (const karta of clusterKartas) {
-    byKey.set(rootGVKKey(karta), { karta, origin: 'cluster' });
-  }
+
+  const index = (kartas: Karta[], origin: DefinitionOrigin) => {
+    for (const karta of kartas) {
+      const key = rootGVKKey(karta);
+      if (key !== null) {
+        byKey.set(key, { karta, origin });
+      }
+    }
+  };
+
+  index(catalogKartas, 'catalog');
+  index(clusterKartas, 'cluster');
+
   return Array.from(byKey.values());
 }

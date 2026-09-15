@@ -42,6 +42,18 @@ describe('useKartaDefinitions', () => {
     expect(result.current.definitions).toEqual([{ karta: catalogDeployment, origin: 'catalog' }]);
   });
 
+  it('stays loading, and does not claim installed, while the cluster list is pending', async () => {
+    listCatalog.mockResolvedValue([karta('catalog-deployment', deploymentGVK)]);
+    useListMock.mockReturnValue([null, null]);
+
+    const { result } = renderHook(() => useKartaDefinitions());
+
+    await waitFor(() => expect(listCatalog).toHaveBeenCalled());
+    expect(result.current.loading).toBe(true);
+    expect(result.current.installed).toBe(false);
+    expect(result.current.crdMissing).toBe(false);
+  });
+
   it('reports installed=true and merges cluster CRs when the list succeeds', async () => {
     const catalogDeployment = karta('catalog-deployment', deploymentGVK);
     const clusterDeployment = karta('cluster-deployment', deploymentGVK);

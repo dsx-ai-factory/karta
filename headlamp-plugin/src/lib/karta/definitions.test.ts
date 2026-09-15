@@ -27,8 +27,16 @@ describe('rootGVKKey', () => {
     expect(rootGVKKey(karta('deployment', deploymentGVK))).toBe('apps/v1, Kind=Deployment');
   });
 
-  it('returns an empty string when the root component has no kind', () => {
-    expect(rootGVKKey(karta('no-kind'))).toBe('');
+  it('has no key when the root component has no kind', () => {
+    expect(rootGVKKey(karta('no-kind'))).toBeNull();
+  });
+
+  it('has no key when the root kind is missing a version', () => {
+    expect(rootGVKKey(karta('no-version', { group: 'apps', version: '', kind: 'Deployment' }))).toBeNull();
+  });
+
+  it('keys a core kind, whose group is empty', () => {
+    expect(rootGVKKey(karta('pod', { group: '', version: 'v1', kind: 'Pod' }))).toBe('/v1, Kind=Pod');
   });
 });
 
@@ -46,6 +54,16 @@ describe('mergeDefinitions', () => {
     const clusterDeployment = karta('cluster-deployment', deploymentGVK);
 
     const merged = mergeDefinitions([catalogDeployment], [clusterDeployment]);
+
+    expect(merged).toEqual([{ karta: clusterDeployment, origin: 'cluster' }]);
+  });
+
+  it('leaves out definitions with no root GVK rather than letting them collide', () => {
+    const firstRootless = karta('rootless-one');
+    const secondRootless = karta('rootless-two');
+    const clusterDeployment = karta('cluster-deployment', deploymentGVK);
+
+    const merged = mergeDefinitions([firstRootless, secondRootless], [clusterDeployment]);
 
     expect(merged).toEqual([{ karta: clusterDeployment, origin: 'cluster' }]);
   });
