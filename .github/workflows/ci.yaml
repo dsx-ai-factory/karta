@@ -52,10 +52,16 @@ jobs:
         run: make lint-shell
 
   controller-e2e:
-    name: Controller E2E
+    name: Controller E2E (${{ matrix.webhook }})
     runs-on: ubuntu-latest
     # A hung provision otherwise burns the 360 minute default.
     timeout-minutes: 30
+    strategy:
+      # The routes render different objects, so one failing says nothing about the
+      # others; cancelling them would hide which arrangements actually work.
+      fail-fast: false
+      matrix:
+        webhook: [auto, cert-manager, disabled]
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -72,7 +78,7 @@ jobs:
       # Base only: the controller suite touches no workload operator, and installing
       # the ten of them would dominate the job.
       - name: Provision cluster
-        run: make e2e-up WORKLOADS=none
+        run: make e2e-up WORKLOADS=none KARTA_WEBHOOK_MODE=${{ matrix.webhook }}
 
       - name: Run controller e2e
         run: make test-e2e
@@ -85,7 +91,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: controller-e2e-artifacts
+          name: controller-e2e-artifacts-${{ matrix.webhook }}
           path: .artifacts/
           if-no-files-found: ignore
 
