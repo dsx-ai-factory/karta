@@ -9,7 +9,7 @@ package main
 import (
 	"os"
 
-	"github.com/run-ai/karta/cli/cmd"
+	"github.com/dsx-ai-factory/workload-map/cli/cmd"
 )
 
 func main() {

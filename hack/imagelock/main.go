@@ -51,6 +51,13 @@ var knownImages = map[string]string{
 	"registry.k8s.io/kubectl": "crd-upgrader",
 }
 
+// selfImages classifies the project's own images by basename so a fork can
+// publish them under its own registry namespace. Third-party images stay
+// exact-match only.
+var selfImages = map[string]string{
+	"karta-operator": "operator",
+}
+
 // operatorRepoSuffix identifies the Karta operator image regardless of the
 // registry or org it is published under.
 const operatorRepoSuffix = "/karta-operator"
@@ -131,6 +138,7 @@ type options struct {
 	platforms      []platform
 	outDir         string
 	helmBin        string
+	setArgs        []string
 	verifyOnly     bool
 	stabilityReads int
 }
@@ -142,6 +150,11 @@ func parseFlags(args []string) (options, error) {
 	var platformArgs []string
 	flags.Func("platform", "os/arch to lock, repeatable (default linux/amd64, linux/arm64)", func(v string) error {
 		platformArgs = append(platformArgs, v)
+		return nil
+	})
+	var setArgs []string
+	flags.Func("set", "helm --set override, repeatable (applied after the built-in toggles)", func(v string) error {
+		setArgs = append(setArgs, v)
 		return nil
 	})
 	outDir := flags.String("out-dir", "../../dist", "output directory")
@@ -166,6 +179,7 @@ func parseFlags(args []string) (options, error) {
 		platforms:      platforms,
 		outDir:         *outDir,
 		helmBin:        *helmBin,
+		setArgs:        setArgs,
 		verifyOnly:     *verifyOnly,
 		stabilityReads: *stabilityReads,
 	}
@@ -215,6 +229,9 @@ func renderChart(opts options) ([]byte, error) {
 	if opts.version != "" {
 		args = append(args, "--set", "image.tag="+opts.version)
 	}
+	for _, override := range opts.setArgs {
+		args = append(args, "--set", override)
+	}
 
 	helm := exec.Command(opts.helmBin, args...)
 	var stderr strings.Builder
@@ -235,6 +252,11 @@ func imagesFromManifest(manifest []byte) ([]chartImage, error) {
 	for _, ref := range refs {
 		repo := repoOf(ref)
 		imageName, known := knownImages[repo]
+		if !known {
+			if base := repo[strings.LastIndex(repo, "/")+1:]; selfImages[base] != "" {
+				imageName, known = selfImages[base], true
+			}
+		}
 		if !known && strings.HasSuffix(repo, operatorRepoSuffix) {
 			imageName, known = "operator", true
 		}

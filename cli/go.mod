@@ -1,4 +1,4 @@
-module github.com/run-ai/karta/cli
+module github.com/dsx-ai-factory/workload-map/cli
 
 go 1.26.3
 
@@ -9,4 +9,4 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 )
 
-replace github.com/run-ai/karta => ../
+replace github.com/dsx-ai-factory/workload-map => ../

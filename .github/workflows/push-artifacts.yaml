@@ -85,7 +85,8 @@ jobs:
         if: github.ref_type == 'tag'
         run: |
           # After the operator push so its tag resolves; PACKAGE_VERSION has no leading v.
-          make image-lock VERSION="$PACKAGE_VERSION"
+          make image-lock VERSION="$PACKAGE_VERSION" \
+            IMAGE_LOCK_SET="image.repository=$REGISTRY_NAMESPACE/karta-operator"
 
       - name: Build helm chart
         run: |
