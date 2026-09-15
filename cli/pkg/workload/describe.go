@@ -558,11 +558,27 @@ func podRequest(spec corev1.PodSpec) Resources {
 		}
 	}
 
-	return Resources{
+	total := Resources{
 		GPUs:        max(largestInit.GPUs, running.GPUs),
 		CPUMillis:   max(largestInit.CPUMillis, running.CPUMillis),
 		MemoryBytes: max(largestInit.MemoryBytes, running.MemoryBytes),
 	}
+
+	// The scheduler charges a pod-level CPU or memory request in place of the
+	// containers'. An extended resource such as a GPU cannot be declared there.
+	if spec.Resources != nil {
+		if cpu, ok := quantityOf(*spec.Resources, corev1.ResourceCPU); ok {
+			total.CPUMillis = cpu
+		}
+		if memory, ok := quantityOf(*spec.Resources, corev1.ResourceMemory); ok {
+			total.MemoryBytes = memory
+		}
+	}
+
+	// The runtime's overhead is charged to the pod on top.
+	total.add(requirementsOf(corev1.ResourceRequirements{Requests: spec.Overhead}))
+
+	return total
 }
 
 func sumContainers(containers []corev1.Container) Resources {
@@ -576,24 +592,25 @@ func sumContainers(containers []corev1.Container) Resources {
 // requirementsOf falls back to limits: an extended resource such as a GPU is
 // often declared there only, and a limit without a request implies it.
 func requirementsOf(requirements corev1.ResourceRequirements) Resources {
-	return Resources{
-		GPUs:        quantityOf(requirements, gpuResourceName),
-		CPUMillis:   quantityOf(requirements, corev1.ResourceCPU),
-		MemoryBytes: quantityOf(requirements, corev1.ResourceMemory),
-	}
+	gpus, _ := quantityOf(requirements, gpuResourceName)
+	cpu, _ := quantityOf(requirements, corev1.ResourceCPU)
+	memory, _ := quantityOf(requirements, corev1.ResourceMemory)
+	return Resources{GPUs: gpus, CPUMillis: cpu, MemoryBytes: memory}
 }
 
-func quantityOf(requirements corev1.ResourceRequirements, name corev1.ResourceName) int64 {
+// quantityOf reports whether the resource was declared, so an explicit zero is
+// not read as absent.
+func quantityOf(requirements corev1.ResourceRequirements, name corev1.ResourceName) (int64, bool) {
 	quantity, ok := requirements.Requests[name]
 	if !ok {
 		if quantity, ok = requirements.Limits[name]; !ok {
-			return 0
+			return 0, false
 		}
 	}
 	if name == corev1.ResourceCPU {
-		return quantity.MilliValue()
+		return quantity.MilliValue(), true
 	}
-	return quantity.Value()
+	return quantity.Value(), true
 }
 
 func kindOf(gvk *metav1.GroupVersionKind) string {

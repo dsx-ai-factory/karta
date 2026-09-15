@@ -464,6 +464,39 @@ spec:
 		Expect(view.Resources.CPUMillis).To(Equal(int64(1000)))
 		Expect(view.Resources.MemoryBytes).To(Equal(int64(2 * 1024 * 1024 * 1024)))
 	})
+
+	// Reading only the containers reports a pod smaller than the one placed.
+	It("prefers a pod-level request over the containers and adds the overhead", func() {
+		view := describeObject([]byte(`
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embed-svc
+  namespace: ml-team
+spec:
+  replicas: 2
+  template:
+    spec:
+      overhead:
+        cpu: "100m"
+        memory: "128Mi"
+      resources:
+        requests:
+          cpu: "2"
+          memory: "4Gi"
+      containers:
+        - name: server
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+              nvidia.com/gpu: "1"
+`))
+
+		Expect(view.Resources.CPUMillis).To(Equal(int64(2*2100)), "2000m pod-level plus 100m overhead, twice")
+		Expect(view.Resources.MemoryBytes).To(Equal(int64(2 * (4*1024*1024*1024 + 128*1024*1024))))
+		Expect(view.Resources.GPUs).To(Equal(int64(2)), "a pod-level request cannot name an extended resource")
+	})
 })
 
 // describeObject resolves an inline manifest through the built-in catalog.
