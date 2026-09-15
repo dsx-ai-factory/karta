@@ -158,7 +158,7 @@ git tag v1.2.3
 git push origin v1.2.3
 ```
 
-Pushing the tag triggers `push-artifacts.yaml`, which publishes `oci://ghcr.io/run-ai/karta/karta:1.2.3` with both `version` and `appVersion` set to `1.2.3`, and creates a corresponding GitHub release.
+Pushing the tag triggers `push-artifacts.yaml`, which publishes `oci://ghcr.io/dsx-ai-factory/workload-map/karta:1.2.3` with both `version` and `appVersion` set to `1.2.3`, and creates a corresponding GitHub release.
 
 No release-prep PR or `Chart.yaml` bump is needed - the tag is the source of truth.
 

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 NVIDIA Corporation
 
 // Package version exposes the operator version that is stamped into the binary
-// at build time via -ldflags "-X github.com/run-ai/karta/operator/pkg/version.Version=<ver>".
+// at build time via -ldflags "-X github.com/dsx-ai-factory/workload-map/operator/pkg/version.Version=<ver>".
 //
 // When the binary is built without ldflags (e.g. `go run ./cmd` during
 // development) Version is "dev".

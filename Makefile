@@ -143,6 +143,7 @@ image-lock: ## Generate the per-platform ImageLock for a release (VERSION=vX.Y.Z
 		--chart $(KARTA_CHART_DIR) \
 		--version $(VERSION) \
 		$(foreach p,$(IMAGE_LOCK_PLATFORMS),--platform $(p)) \
+		$(foreach s,$(IMAGE_LOCK_SET),--set $(s)) \
 		--out-dir $(IMAGE_LOCK_OUT_DIR)
 
 .PHONY: image-lock-verify

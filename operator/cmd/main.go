@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/run-ai/karta/operator/pkg"
-	"github.com/run-ai/karta/operator/pkg/version"
-	kartav1alpha1 "github.com/run-ai/karta/pkg/api/runai/v1alpha1"
+	"github.com/dsx-ai-factory/workload-map/operator/pkg"
+	"github.com/dsx-ai-factory/workload-map/operator/pkg/version"
+	kartav1alpha1 "github.com/dsx-ai-factory/workload-map/pkg/api/runai/v1alpha1"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
