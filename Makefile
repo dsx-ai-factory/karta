@@ -429,6 +429,15 @@ e2e-up: ## Provision a kind cluster + operators (WORKLOADS=<list>|all|none; KART
 	CERT_MANAGER=$(CERT_MANAGER) \
 	./hack/e2e/up.sh $(WORKLOADS)
 
+# Overall go-test timeout for the operator suite. Separate from E2E_TIMEOUT, which
+# caps the much longer workload-recording run.
+E2E_OPERATOR_TIMEOUT ?= 15m
+
+# Deliberately absent from check-operator: it needs a cluster, and check must not.
+.PHONY: test-operator-e2e
+test-operator-e2e: ## Run the operator e2e against the current cluster (make e2e-up first; CLUSTER_NAME for a named one)
+	CLUSTER_NAME=$(CLUSTER_NAME) $(E2E_KUBECONFIG) ./hack/e2e/karta-operator/test.sh
+
 .PHONY: e2e-down
 e2e-down: ## Tear down the e2e cluster (set CLUSTER_NAME for a named one)
 	CLUSTER_NAME=$(CLUSTER_NAME) ./hack/e2e/down.sh
@@ -449,9 +458,10 @@ verify-recordings: ## Fail if any recorded fixture ended with succeeded false (r
 	if [ -n "$$bad" ]; then echo "recordings that did not succeed:"; echo "$$bad"; exit 1; fi; \
 	echo "all recordings succeeded"
 
-# The e2e shell scripts to shellcheck: the provisioner, teardown, the Karta install,
-# the shared helpers, and every per-operator install.sh/verify.sh.
-E2E_SHELL := hack/e2e/up.sh hack/e2e/down.sh hack/e2e/install.sh hack/e2e/verify.sh \
+# The e2e shell scripts to shellcheck: the provisioner, teardown, the karta-operator
+# scripts, the shared helpers, and every per-operator install.sh/verify.sh.
+E2E_SHELL := hack/e2e/up.sh hack/e2e/down.sh \
+	$(wildcard hack/e2e/karta-operator/*.sh) \
 	hack/e2e/operators/_common.sh \
 	$(wildcard hack/e2e/operators/*/install.sh) \
 	$(wildcard hack/e2e/operators/*/verify.sh)
