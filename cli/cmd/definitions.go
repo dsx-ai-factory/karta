@@ -133,10 +133,7 @@ func newDefinitionsCommand(rcg genericclioptions.RESTClientGetter) *cobra.Comman
 			table := func(out io.Writer) error {
 				return renderDefinitions(out, cmd.ErrOrStderr(), definitionRows(matches))
 			}
-			if len(args) == 1 {
-				return generator.RenderNamed(cmd.OutOrStdout(), output.Get(), kartas[0], table)
-			}
-			return generator.Render(cmd.OutOrStdout(), output.Get(), kartas, table)
+			return generator.Render(cmd.OutOrStdout(), output.Get(), kartas, len(args) == 1, table)
 		},
 	}
 

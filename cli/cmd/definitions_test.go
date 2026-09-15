@@ -307,7 +307,7 @@ var _ = Describe("a definition that names no workload type", func() {
 	It("never leaks the table placeholder into a machine format", func() {
 		var stdout bytes.Buffer
 		kartas := []*v1alpha1.Karta{rootless("broken-karta")}
-		Expect(generator.Render(&stdout, generator.OutputJSON, kartas, unusedTable)).To(Succeed())
+		Expect(generator.Render(&stdout, generator.OutputJSON, kartas, false, unusedTable)).To(Succeed())
 
 		// "<none>" is a column affordance, never part of the data.
 		Expect(stdout.String()).NotTo(ContainSubstring("<none>"))
@@ -368,7 +368,7 @@ var _ = Describe("rendering an empty definition list", func() {
 
 	It("emits an empty json envelope with no note", func() {
 		var stdout bytes.Buffer
-		Expect(generator.Render[*v1alpha1.Karta](&stdout, generator.OutputJSON, nil, unusedTable)).To(Succeed())
+		Expect(generator.Render[*v1alpha1.Karta](&stdout, generator.OutputJSON, nil, false, unusedTable)).To(Succeed())
 		Expect(decodeKartas(stdout.String())).To(BeEmpty())
 	})
 })

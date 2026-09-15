@@ -126,7 +126,7 @@ var _ = Describe("RenderWorkloads", func() {
 		It("emits the view itself, with no envelope around it", func() {
 			var out, errOut bytes.Buffer
 			Expect(RenderWorkloads(&out, &errOut, views,
-				Options{Output: OutputJSON, Namespace: "ml-team", Named: true})).To(Succeed())
+				Options{Output: OutputJSON, Namespace: "ml-team", ByName: true})).To(Succeed())
 
 			Expect(out.String()).NotTo(ContainSubstring(`"items"`))
 			Expect(out.String()).To(ContainSubstring(`"name": "preprocess"`))
@@ -135,7 +135,7 @@ var _ = Describe("RenderWorkloads", func() {
 		It("renders the same table as a list does", func() {
 			var named, listed bytes.Buffer
 			Expect(RenderWorkloads(&named, &bytes.Buffer{}, views,
-				Options{Namespace: "ml-team", Named: true})).To(Succeed())
+				Options{Namespace: "ml-team", ByName: true})).To(Succeed())
 			Expect(RenderWorkloads(&listed, &bytes.Buffer{}, views,
 				Options{Namespace: "ml-team"})).To(Succeed())
 
@@ -145,7 +145,7 @@ var _ = Describe("RenderWorkloads", func() {
 		It("falls back to the envelope when nothing resolved", func() {
 			var out, errOut bytes.Buffer
 			Expect(RenderWorkloads(&out, &errOut, nil,
-				Options{Output: OutputJSON, Namespace: "ml-team", Named: true})).To(Succeed())
+				Options{Output: OutputJSON, Namespace: "ml-team", ByName: true})).To(Succeed())
 
 			Expect(out.String()).To(ContainSubstring(`"items": []`))
 		})
