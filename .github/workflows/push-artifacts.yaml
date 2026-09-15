@@ -47,7 +47,7 @@ jobs:
           # Derive from the repo owner so a fork publishes to its own ghcr
           # namespace. ghcr requires lowercase, and an owner can be mixed case.
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          REGISTRY_NAMESPACE="ghcr.io/${OWNER}/karta"
+          REGISTRY_NAMESPACE="ghcr.io/${OWNER}/workload-map"
           echo "REGISTRY_NAMESPACE=$REGISTRY_NAMESPACE" >> $GITHUB_ENV
           echo "HELM_REGISTRY=$REGISTRY_NAMESPACE" >> $GITHUB_ENV
           echo "Publishing artifacts to $REGISTRY_NAMESPACE"
