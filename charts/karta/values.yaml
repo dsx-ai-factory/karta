@@ -120,4 +120,4 @@ crdUpgrader:
     limits:
       cpu: 200m
       memory: 128Mi
-      ephemeral-storage: 256Mi
+      ephemeral-storage: 2Gi
