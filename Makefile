@@ -436,7 +436,7 @@ E2E_CONTROLLER_TIMEOUT ?= 15m
 # Deliberately absent from check-operator: it needs a cluster, and check must not.
 .PHONY: test-e2e
 test-e2e: ## Run the controller e2e against the current cluster (make e2e-up first)
-	./hack/e2e/test.sh
+	./hack/e2e/karta-operator/test.sh
 
 .PHONY: e2e-down
 e2e-down: ## Tear down the e2e cluster (set CLUSTER_NAME for a named one)
@@ -458,9 +458,10 @@ verify-recordings: ## Fail if any recorded fixture ended with succeeded false (r
 	if [ -n "$$bad" ]; then echo "recordings that did not succeed:"; echo "$$bad"; exit 1; fi; \
 	echo "all recordings succeeded"
 
-# The e2e shell scripts to shellcheck: the provisioner, teardown, the Karta install,
-# the shared helpers, and every per-operator install.sh/verify.sh.
-E2E_SHELL := hack/e2e/up.sh hack/e2e/down.sh hack/e2e/install.sh hack/e2e/verify.sh hack/e2e/test.sh \
+# The e2e shell scripts to shellcheck: the provisioner, teardown, the karta-operator
+# scripts, the shared helpers, and every per-operator install.sh/verify.sh.
+E2E_SHELL := hack/e2e/up.sh hack/e2e/down.sh \
+	$(wildcard hack/e2e/karta-operator/*.sh) \
 	hack/e2e/operators/_common.sh \
 	$(wildcard hack/e2e/operators/*/install.sh) \
 	$(wildcard hack/e2e/operators/*/verify.sh)

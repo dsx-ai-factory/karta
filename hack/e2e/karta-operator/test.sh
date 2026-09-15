@@ -8,9 +8,9 @@
 set -euo pipefail
 MODULE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "${MODULE_DIR}/operators/_common.sh"
+source "${MODULE_DIR}/../operators/_common.sh"
 
-REPO_ROOT="${REPO_ROOT:-$(cd "${MODULE_DIR}/../.." && pwd)}"
+REPO_ROOT="${REPO_ROOT:-$(cd "${MODULE_DIR}/../../.." && pwd)}"
 ARTIFACTS="${ARTIFACTS:-${REPO_ROOT}/.artifacts}"
 E2E_CONTROLLER_TIMEOUT="${E2E_CONTROLLER_TIMEOUT:-15m}"
 
