@@ -34,7 +34,16 @@ collect() {
 }
 trap collect EXIT
 
-echo "==> controller e2e (webhook: ${KARTA_WEBHOOK_MODE})"
+# Read the route off the cluster rather than the environment: make test-e2e does not
+# take KARTA_WEBHOOK_MODE, so global.env's default would mislabel every run.
+args="$(kubectl get "deploy/${KARTA_FULLNAME}" -n "${KARTA_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null || true)"
+case "${args}" in
+  *webhook-cert-mode=auto*) mode=auto ;;
+  *webhook-cert-mode=manual*) mode=cert-manager ;;
+  *) mode=disabled ;;
+esac
+echo "==> controller e2e (webhook: ${mode})"
 cd "${REPO_ROOT}/operator"
 # -count=1 keeps a previous pass from being replayed from the cache.
 go test -tags e2e -count=1 -v -timeout "${E2E_CONTROLLER_TIMEOUT}" ./test/e2e/...

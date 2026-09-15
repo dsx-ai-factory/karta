@@ -20,11 +20,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Built-in, so CRDExists needs nothing installed, and unclaimed by any catalog root,
-// so the cluster-wide uniqueness rule cannot reject these.
+// Built-ins, so CRDExists needs nothing installed. One per spec group: only one Karta
+// per root GVK is allowed cluster wide, and deletion is not instant, so sharing a GVK
+// would let a terminating Karta reject the next spec's create.
 var (
-	replicaSetGVK = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "ReplicaSet"}
-	daemonSetGVK  = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "DaemonSet"}
+	replicaSetGVK  = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "ReplicaSet"}
+	daemonSetGVK   = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "DaemonSet"}
+	statefulSetGVK = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "StatefulSet"}
 )
 
 // Rendered by the chart from karta.fullname; hack/e2e/global.env holds the same base.
@@ -76,6 +78,86 @@ var _ = Describe("Karta controller on a live cluster", Serial, func() {
 	})
 })
 
+// An invalid Karta behaves differently per route, so each half gets its own block
+// rather than a branch inside one spec. ValidateCreate runs the same validator the
+// controller runs, so with the webhook on the Karta never exists and no condition is
+// ever written.
+var _ = Describe("an invalid Karta, webhook installed", Serial, Label("webhook"), func() {
+	BeforeEach(func() {
+		if !webhookEnabled() {
+			Skip("no validating webhook on this cluster (KARTA_WEBHOOK_MODE=disabled)")
+		}
+	})
+
+	It("is refused at admission and does not persist", func() {
+		k := newInvalidKarta("e2e-invalid-admission", daemonSetGVK)
+
+		Expect(k8sClient.Create(testCtx, k)).To(MatchError(ContainSubstring("status definition")))
+
+		err := k8sClient.Get(testCtx, types.NamespacedName{Name: k.Name}, &kartav1alpha1.Karta{})
+		Expect(apierrors.IsNotFound(err)).To(BeTrue(), "a refused create must leave nothing behind")
+	})
+
+	// Uniqueness has no controller-side equivalent, so it is only observable here.
+	It("refuses a second Karta claiming the same root GVK", func() {
+		first := createKarta(newKarta("e2e-unique-first", statefulSetGVK))
+		expectCondition(first.Name, kartav1alpha1.ConditionReady, metav1.ConditionTrue)
+
+		second := newKarta("e2e-unique-second", statefulSetGVK)
+		Expect(k8sClient.Create(testCtx, second)).To(
+			MatchError(ContainSubstring("only one Karta per group/version/kind")))
+	})
+})
+
+var _ = Describe("an invalid Karta, webhook disabled", Serial, Label("no-webhook"), func() {
+	BeforeEach(func() {
+		if webhookEnabled() {
+			Skip("validating webhook is installed, so an invalid Karta never reaches the controller")
+		}
+	})
+
+	It("is admitted and reported as Validated=False then Ready=False", func() {
+		k := createKarta(newInvalidKarta("e2e-invalid-reported", daemonSetGVK))
+
+		expectCondition(k.Name, kartav1alpha1.ConditionValidated, metav1.ConditionFalse)
+		expectConditionSettled(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionFalse)
+	})
+
+	It("returns to Ready once the spec is fixed", func() {
+		k := createKarta(newInvalidKarta("e2e-invalid-fixed", daemonSetGVK))
+		expectCondition(k.Name, kartav1alpha1.ConditionValidated, metav1.ConditionFalse)
+
+		// Retried because the controller is patching status underneath this.
+		Eventually(func(g Gomega) {
+			cur := getKarta(g, k.Name)
+			cur.Spec.StructureDefinition.RootComponent.StatusDefinition = &kartav1alpha1.StatusDefinition{
+				StatusMappings: kartav1alpha1.StatusMappings{},
+			}
+			g.Expect(k8sClient.Update(testCtx, cur)).To(Succeed())
+		}, reconcileTimeout, pollInterval).Should(Succeed())
+
+		// A spec change bumps generation, so the guard in conditionIs is load bearing
+		// here: it is what stops this passing on the pre-update False.
+		expectCondition(k.Name, kartav1alpha1.ConditionValidated, metav1.ConditionTrue)
+		expectConditionSettled(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionTrue)
+	})
+
+	It("carries the validator error in the condition message", func() {
+		k := createKarta(newInvalidKarta("e2e-invalid-message", daemonSetGVK))
+
+		expectCondition(k.Name, kartav1alpha1.ConditionValidated, metav1.ConditionFalse)
+		Eventually(func(g Gomega) {
+			for _, c := range getKarta(g, k.Name).Status.Conditions {
+				if c.Type == string(kartav1alpha1.ConditionValidated) {
+					g.Expect(c.Message).To(ContainSubstring("status definition"))
+					return
+				}
+			}
+			g.Expect(false).To(BeTrue(), "Validated is not set")
+		}, reconcileTimeout, pollInterval).Should(Succeed())
+	})
+})
+
 func createCRD(gvk schema.GroupVersionKind) *apiextensionsv1.CustomResourceDefinition {
 	GinkgoHelper()
 	plural := strings.ToLower(gvk.Kind) + "s"
@@ -109,54 +191,3 @@ func createCRD(gvk schema.GroupVersionKind) *apiextensionsv1.CustomResourceDefin
 	})
 	return crd
 }
-
-// An invalid Karta behaves differently per route, so each half gets its own block
-// rather than a branch inside one spec. ValidateCreate runs the same validator the
-// controller runs, so with the webhook on the Karta never exists and no condition is
-// ever written.
-var _ = Describe("an invalid Karta, webhook installed", Serial, Label("webhook"), func() {
-	BeforeEach(func() {
-		if !webhookEnabled() {
-			Skip("no validating webhook on this cluster (KARTA_WEBHOOK_MODE=disabled)")
-		}
-	})
-
-	It("is refused at admission and does not persist", func() {
-		k := newInvalidKarta("e2e-invalid-admission", daemonSetGVK)
-
-		Expect(k8sClient.Create(testCtx, k)).To(MatchError(ContainSubstring("status definition")))
-
-		err := k8sClient.Get(testCtx, types.NamespacedName{Name: k.Name}, &kartav1alpha1.Karta{})
-		Expect(apierrors.IsNotFound(err)).To(BeTrue(), "a refused create must leave nothing behind")
-	})
-})
-
-var _ = Describe("an invalid Karta, webhook disabled", Serial, Label("no-webhook"), func() {
-	BeforeEach(func() {
-		if webhookEnabled() {
-			Skip("validating webhook is installed, so an invalid Karta never reaches the controller")
-		}
-	})
-
-	It("is admitted and reported as Validated=False then Ready=False", func() {
-		k := createKarta(newInvalidKarta("e2e-invalid-reported", daemonSetGVK))
-
-		expectCondition(k.Name, kartav1alpha1.ConditionValidated, metav1.ConditionFalse)
-		expectConditionSettled(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionFalse)
-	})
-
-	It("carries the validator error in the condition message", func() {
-		k := createKarta(newInvalidKarta("e2e-invalid-message", daemonSetGVK))
-
-		expectCondition(k.Name, kartav1alpha1.ConditionValidated, metav1.ConditionFalse)
-		Eventually(func(g Gomega) {
-			for _, c := range getKarta(g, k.Name).Status.Conditions {
-				if c.Type == string(kartav1alpha1.ConditionValidated) {
-					g.Expect(c.Message).To(ContainSubstring("status definition"))
-					return
-				}
-			}
-			g.Expect(false).To(BeTrue(), "Validated is not set")
-		}, reconcileTimeout, pollInterval).Should(Succeed())
-	})
-})
