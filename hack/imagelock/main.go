@@ -42,13 +42,18 @@ const (
 // required to agree, guarding against a tag that moves mid-run.
 const defaultStabilityReads = 10
 
-// knownImages maps each shippable repository to the short name it gets in the
-// lock. Classification is fail-closed: a repository missing here stops the
-// release, so every new image must be added on purpose before it can ship.
+// knownImages maps each shippable third-party repository to the short name it
+// gets in the lock. The operator image is matched by its operatorRepoSuffix
+// instead, so the lock survives an org rename or a fork publishing under its
+// own namespace without a code change. Classification stays fail-closed: any
+// image that is neither listed here nor the operator stops the release.
 var knownImages = map[string]string{
-	"ghcr.io/run-ai/karta/karta-operator": "operator",
-	"registry.k8s.io/kubectl":             "crd-upgrader",
+	"registry.k8s.io/kubectl": "crd-upgrader",
 }
+
+// operatorRepoSuffix identifies the Karta operator image regardless of the
+// registry or org it is published under.
+const operatorRepoSuffix = "/karta-operator"
 
 var sha256Digest = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 
@@ -230,6 +235,9 @@ func imagesFromManifest(manifest []byte) ([]chartImage, error) {
 	for _, ref := range refs {
 		repo := repoOf(ref)
 		imageName, known := knownImages[repo]
+		if !known && strings.HasSuffix(repo, operatorRepoSuffix) {
+			imageName, known = "operator", true
+		}
 		if !known {
 			return nil, fmt.Errorf("unknown image %q (repo %q): add it to knownImages before releasing", ref, repo)
 		}

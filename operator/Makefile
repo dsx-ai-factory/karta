@@ -14,7 +14,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 # Override any component from the command line, e.g.:
 #   make docker-build IMAGE_TAG=v1.2.3
 #   make docker-build IMAGE_REGISTRY=ghcr.io/myorg/karta
-IMAGE_REGISTRY ?= ghcr.io/run-ai/karta
+IMAGE_REGISTRY ?= ghcr.io/dsx-ai-factory/karta
 IMAGE_NAME      ?= karta-operator
 IMAGE_TAG       ?= $(VERSION)
 IMAGE           ?= $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
