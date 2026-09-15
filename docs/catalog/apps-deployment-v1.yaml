@@ -28,6 +28,10 @@ spec:
             - byConditions:
                 - type: Progressing
                   status: "True"
+                  reason: NewReplicaSetCreated
+            - byConditions:
+                - type: Progressing
+                  status: "True"
                 - type: Available
                   status: "False"
           running:

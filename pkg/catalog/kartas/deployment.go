@@ -35,10 +35,18 @@ func Deployment() *v1alpha1.Karta {
 							ReasonFieldName:  ptr.To("reason"),
 						},
 						StatusMappings: v1alpha1.StatusMappings{
-							Initializing: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
-								{Type: "Progressing", Status: ptr.To("True")},
-								{Type: "Available", Status: ptr.To("False")},
-							}}},
+							Initializing: []v1alpha1.StatusMatcher{
+								// A just-created Deployment: the controller writes this reason exactly once,
+								// before any Available condition exists. Scaling and steady state carry
+								// NewReplicaSetAvailable, so this matcher cannot fire outside birth.
+								{ByConditions: []v1alpha1.ExpectedCondition{
+									{Type: "Progressing", Status: ptr.To("True"), Reason: ptr.To("NewReplicaSetCreated")},
+								}},
+								{ByConditions: []v1alpha1.ExpectedCondition{
+									{Type: "Progressing", Status: ptr.To("True")},
+									{Type: "Available", Status: ptr.To("False")},
+								}},
+							},
 							Running: []v1alpha1.StatusMatcher{{ByConditions: []v1alpha1.ExpectedCondition{
 								{Type: "Progressing", Status: ptr.To("True"), Reason: ptr.To("NewReplicaSetAvailable")},
 							}}},
