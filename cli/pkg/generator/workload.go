@@ -24,18 +24,21 @@ type Options struct {
 	Namespace string
 	// AllNamespaces drops the namespace from the empty-result message.
 	AllNamespaces bool
+	// Named reports that the request addressed one workload by name.
+	Named bool
 }
 
-// RenderWorkloads writes views to out. The machine formats go through Render, so
-// every command emits the same shapes; only the table is specific to a view. The
-// empty-result notice goes to errOut so it cannot corrupt piped output.
+// RenderWorkloads writes views to out. The machine formats go through Render and
+// RenderNamed, so every command emits the same shapes; only the table is specific
+// to a view. The empty-result notice goes to errOut so it cannot corrupt piped
+// output.
 func RenderWorkloads(out, errOut io.Writer, views []workload.View, opts Options) error {
 	format := opts.Output
 	if format == "" {
 		format = OutputTable
 	}
 
-	return Render(out, format, views, func(w io.Writer) error {
+	table := func(w io.Writer) error {
 		if len(views) == 0 {
 			notice := fmt.Sprintf("No workloads found in namespace %s.", opts.Namespace)
 			if opts.AllNamespaces {
@@ -48,7 +51,12 @@ func RenderWorkloads(out, errOut io.Writer, views []workload.View, opts Options)
 			return nil
 		}
 		return renderWorkloadTable(w, views, format)
-	})
+	}
+
+	if opts.Named && len(views) == 1 {
+		return RenderNamed(out, format, views[0], table)
+	}
+	return Render(out, format, views, table)
 }
 
 func renderWorkloadTable(out io.Writer, views []workload.View, format Output) error {

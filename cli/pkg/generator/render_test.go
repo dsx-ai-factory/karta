@@ -91,6 +91,47 @@ var _ = Describe("Render", func() {
 		Expect(err.Error()).To(ContainSubstring(`"toml"`))
 		Expect(out.String()).To(BeEmpty())
 	})
+
+})
+
+var _ = Describe("RenderNamed", func() {
+	DescribeTable("emits the item itself, with no envelope around it",
+		func(format generator.Output) {
+			var out bytes.Buffer
+			Expect(generator.RenderNamed(&out, format, items[0], unusedTable)).To(Succeed())
+
+			var decoded item
+			Expect(yaml.Unmarshal(out.Bytes(), &decoded)).To(Succeed())
+			Expect(decoded).To(Equal(items[0]))
+
+			decodedItems, count := decodeEnvelope(out.String())
+			Expect(decodedItems).To(BeEmpty())
+			Expect(count).To(BeZero())
+		},
+		Entry("json", generator.OutputJSON),
+		Entry("yaml", generator.OutputYAML),
+	)
+
+	DescribeTable("hands the human formats to the table callback",
+		func(format generator.Output) {
+			var out bytes.Buffer
+			Expect(generator.RenderNamed(&out, format, items[0], func(w io.Writer) error {
+				_, err := io.WriteString(w, "TABLE")
+				return err
+			})).To(Succeed())
+			Expect(out.String()).To(Equal("TABLE"))
+		},
+		Entry("table", generator.OutputTable),
+		Entry("wide", generator.OutputWide),
+	)
+
+	It("names the format it cannot render", func() {
+		var out bytes.Buffer
+		err := generator.RenderNamed(&out, generator.Output("toml"), items[0], unusedTable)
+		Expect(err).To(MatchError(generator.ErrUnsupportedOutput))
+		Expect(err.Error()).To(ContainSubstring(`"toml"`))
+		Expect(out.String()).To(BeEmpty())
+	})
 })
 
 // decodeEnvelope reads the items and count the machine formats wrap a result in.

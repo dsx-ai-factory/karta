@@ -31,6 +31,15 @@ func newList[T any](items []T) list[T] {
 
 // Render writes items in the machine formats and hands the human ones to table.
 func Render[T any](out io.Writer, format Output, items []T, table func(io.Writer) error) error {
+	return render(out, format, newList(items), table)
+}
+
+// RenderNamed is Render for a request that addressed one resource by name.
+func RenderNamed[T any](out io.Writer, format Output, item T, table func(io.Writer) error) error {
+	return render(out, format, item, table)
+}
+
+func render(out io.Writer, format Output, payload any, table func(io.Writer) error) error {
 	switch format {
 	case OutputTable, OutputWide:
 		return table(out)
@@ -38,13 +47,13 @@ func Render[T any](out io.Writer, format Output, items []T, table func(io.Writer
 	case OutputJSON:
 		encoder := json.NewEncoder(out)
 		encoder.SetIndent("", "  ")
-		if err := encoder.Encode(newList(items)); err != nil {
+		if err := encoder.Encode(payload); err != nil {
 			return fmt.Errorf("encode as json: %w", err)
 		}
 		return nil
 
 	case OutputYAML:
-		data, err := yaml.Marshal(newList(items))
+		data, err := yaml.Marshal(payload)
 		if err != nil {
 			return fmt.Errorf("encode as yaml: %w", err)
 		}
