@@ -10,7 +10,7 @@ LOCALBIN ?= $(PROJECT_DIR)/bin
 # (tag v1.2.3 -> 1.2.3, main -> 0.0.0-main-<sha>).
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "0.0.0-main")
 
-VERSION_PKG := github.com/run-ai/karta/pkg/version
+VERSION_PKG := github.com/dsx-ai-factory/workload-map/pkg/version
 GO_LDFLAGS  := -X $(VERSION_PKG).version=$(VERSION)
 LDFLAGS     := -ldflags "$(GO_LDFLAGS)"
 
@@ -42,11 +42,11 @@ ENVTEST             ?= $(LOCALBIN)/setup-envtest-$(ENVTEST_VERSION)
 
 GOLANGCI_LINT_FLAGS ?= $(if $(VERBOSE),-v)
 
-# Container image settings (defaults for ghcr.io/dsx-ai-factory/karta OSS publishing).
+# Container image settings (defaults for ghcr.io/dsx-ai-factory/workload-map OSS publishing).
 # Override any component from the command line, e.g.:
 #   make operator-image IMAGE_TAG=v1.2.3
 #   make operator-image IMAGE_REGISTRY=ghcr.io/myorg/karta
-IMAGE_REGISTRY ?= ghcr.io/dsx-ai-factory/karta
+IMAGE_REGISTRY ?= ghcr.io/dsx-ai-factory/workload-map
 IMAGE_NAME     ?= karta-operator
 IMAGE_TAG      ?= $(VERSION)
 IMAGE          ?= $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)

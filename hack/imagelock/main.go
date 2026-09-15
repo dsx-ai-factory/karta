@@ -46,7 +46,7 @@ const defaultStabilityReads = 10
 // lock. Classification is fail-closed: a repository missing here stops the
 // release, so every new image must be added on purpose before it can ship.
 var knownImages = map[string]string{
-	"ghcr.io/dsx-ai-factory/karta/karta-operator": "operator",
+	"ghcr.io/dsx-ai-factory/workload-map/karta-operator": "operator",
 	"registry.k8s.io/kubectl":                     "crd-upgrader",
 }
 
