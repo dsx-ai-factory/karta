@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 NVIDIA Corporation
 #
-# Run the controller e2e against the current cluster. Provision first with up.sh;
+# Run the operator e2e against the current cluster. Provision first with up.sh;
 # this script installs nothing.
 # shellcheck disable=SC2154  # KARTA_* come from global.env via _common.sh
 set -euo pipefail
@@ -12,7 +12,7 @@ source "${MODULE_DIR}/../operators/_common.sh"
 
 REPO_ROOT="${REPO_ROOT:-$(cd "${MODULE_DIR}/../../.." && pwd)}"
 ARTIFACTS="${ARTIFACTS:-${REPO_ROOT}/.artifacts}"
-E2E_CONTROLLER_TIMEOUT="${E2E_CONTROLLER_TIMEOUT:-15m}"
+E2E_OPERATOR_TIMEOUT="${E2E_OPERATOR_TIMEOUT:-15m}"
 
 # On every exit path, not just failure: a trap that only fires on error is one
 # nobody tests.
@@ -34,7 +34,7 @@ collect() {
 }
 trap collect EXIT
 
-# Read the route off the cluster rather than the environment: make test-e2e does not
+# Read the route off the cluster rather than the environment: make test-operator-e2e does not
 # take KARTA_WEBHOOK_MODE, so global.env's default would mislabel every run.
 args="$(kubectl get "deploy/${KARTA_FULLNAME}" -n "${KARTA_NAMESPACE}" \
   -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null || true)"
@@ -43,7 +43,7 @@ case "${args}" in
   *webhook-cert-mode=manual*) mode=cert-manager ;;
   *) mode=disabled ;;
 esac
-echo "==> controller e2e (webhook: ${mode})"
+echo "==> operator e2e (webhook: ${mode})"
 cd "${REPO_ROOT}/operator"
 # -count=1 keeps a previous pass from being replayed from the cache.
-go test -tags e2e -count=1 -v -timeout "${E2E_CONTROLLER_TIMEOUT}" ./test/e2e/...
+go test -tags e2e -count=1 -v -timeout "${E2E_OPERATOR_TIMEOUT}" ./test/e2e/...

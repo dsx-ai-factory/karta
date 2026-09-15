@@ -3,9 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 NVIDIA Corporation
 
-// Package e2e tests the operator as the chart deploys it, against whatever cluster the
-// ambient kubeconfig points at. hack/e2e/up.sh puts that cluster there. The build tag
-// keeps it out of go test ./..., so make check cannot reach for a cluster.
 package e2e
 
 import (
@@ -30,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Overridable because CI and a laptop disagree about how long a reconcile takes.
 var (
 	reconcileTimeout = envDuration("KARTA_E2E_RECONCILE_TIMEOUT", 60*time.Second)
 	settleWindow     = envDuration("KARTA_E2E_SETTLE_WINDOW", 10*time.Second)
@@ -57,7 +53,6 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: buildScheme()})
 	Expect(err).NotTo(HaveOccurred())
 
-	// Fail here rather than in every spec alike when the operator was never installed.
 	Expect(k8sClient.List(testCtx, &kartav1alpha1.KartaList{})).To(Succeed(),
 		"cannot list Kartas; run make e2e-up WORKLOADS=none")
 })
@@ -88,8 +83,6 @@ func envDuration(key string, fallback time.Duration) time.Duration {
 	return d
 }
 
-// StatusDefinition is what makes it valid: without one the validator rejects it, and
-// with the webhook on that is a refused create rather than Validated=False.
 func newKarta(name string, gvk schema.GroupVersionKind) *kartav1alpha1.Karta {
 	return &kartav1alpha1.Karta{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
@@ -109,16 +102,12 @@ func newKarta(name string, gvk schema.GroupVersionKind) *kartav1alpha1.Karta {
 	}
 }
 
-// Dropping StatusDefinition is the cheapest way to fail the validator without
-// depending on any other rule.
 func newInvalidKarta(name string, gvk schema.GroupVersionKind) *kartav1alpha1.Karta {
 	k := newKarta(name, gvk)
 	k.Spec.StructureDefinition.RootComponent.StatusDefinition = nil
 	return k
 }
 
-// Decides which half of the invalid-Karta contract applies: with the webhook on the
-// create is refused, with it off the controller admits and reports.
 func webhookEnabled() bool {
 	GinkgoHelper()
 	cfg := &admissionv1.ValidatingWebhookConfiguration{}
@@ -130,7 +119,6 @@ func webhookEnabled() bool {
 	return true
 }
 
-// Kartas are cluster-scoped, so a leak from a failing spec reaches the next one.
 func createKarta(k *kartav1alpha1.Karta) *kartav1alpha1.Karta {
 	GinkgoHelper()
 	Expect(k8sClient.Create(testCtx, k)).To(Succeed())
@@ -147,8 +135,7 @@ func getKarta(g Gomega, name string) *kartav1alpha1.Karta {
 }
 
 // The generation guard stops an assertion passing on the status a previous reconcile
-// left behind. It is inert where the spec does not cause the transition, since
-// installing a CRD does not bump generation, so those specs assert the start state.
+// left behind. It is inert where the spec itself does not bump generation.
 func conditionIs(k *kartav1alpha1.Karta, ct kartav1alpha1.ConditionType, status metav1.ConditionStatus) (bool, string) {
 	for _, c := range k.Status.Conditions {
 		if c.Type != string(ct) {
@@ -173,8 +160,7 @@ func expectCondition(name string, ct kartav1alpha1.ConditionType, status metav1.
 	}, reconcileTimeout, pollInterval).Should(Succeed())
 }
 
-// Eventually alone accepts a value that flickers past, which makes a negative
-// assertion meaningless.
+// Eventually alone accepts a value that flickers past.
 func expectConditionSettled(name string, ct kartav1alpha1.ConditionType, status metav1.ConditionStatus) {
 	GinkgoHelper()
 	expectCondition(name, ct, status)
@@ -184,7 +170,6 @@ func expectConditionSettled(name string, ct kartav1alpha1.ConditionType, status 
 	}, settleWindow, pollInterval).Should(Succeed())
 }
 
-// Proves cleanup finished, not merely that a delete was accepted.
 func expectGone(name string) {
 	GinkgoHelper()
 	Eventually(func() bool {

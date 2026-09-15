@@ -20,20 +20,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Built-ins, so CRDExists needs nothing installed. One per spec group: only one Karta
-// per root GVK is allowed cluster wide, and deletion is not instant, so sharing a GVK
-// would let a terminating Karta reject the next spec's create.
 var (
 	replicaSetGVK  = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "ReplicaSet"}
 	daemonSetGVK   = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "DaemonSet"}
 	statefulSetGVK = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "StatefulSet"}
 )
 
-// Rendered by the chart from karta.fullname; hack/e2e/global.env holds the same base.
 const validatingWebhookName = "karta-operator-validating"
 
-// Serial: everything here is cluster-scoped, so no spec is safe beside a sibling.
-var _ = Describe("Karta controller on a live cluster", Serial, func() {
+var _ = Describe("Karta operator on a live cluster", Serial, func() {
 	It("drives a valid Karta to Ready", func() {
 		k := createKarta(newKarta("e2e-ready", replicaSetGVK))
 
@@ -42,7 +37,7 @@ var _ = Describe("Karta controller on a live cluster", Serial, func() {
 		expectConditionSettled(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionTrue)
 	})
 
-	It("reports CRDExists=False and Ready=False when the referenced CRD is absent", func() {
+	It("checks CRDExists=False and Ready=False when the referenced CRD is absent", func() {
 		absent := schema.GroupVersionKind{Group: "absent.e2e.run.ai", Version: "v1", Kind: "Missing"}
 		k := createKarta(newKarta("e2e-crd-absent", absent))
 
@@ -50,21 +45,44 @@ var _ = Describe("Karta controller on a live cluster", Serial, func() {
 		expectConditionSettled(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionFalse)
 	})
 
-	It("follows a CRD appearing and then being removed", func() {
-		gvk := schema.GroupVersionKind{Group: "flow.e2e.run.ai", Version: "v1", Kind: "Widget"}
-		k := createKarta(newKarta("e2e-crd-flow", gvk))
+	It("installs a CRD and checks CRDExists flips to True", func() {
+		gvk := schema.GroupVersionKind{Group: "install.e2e.run.ai", Version: "v1", Kind: "Widget"}
+		k := createKarta(newKarta("e2e-crd-install", gvk))
 
-		// Installing a CRD does not bump generation, so observing False first is what
-		// makes the flip a transition rather than a coincidence.
+		// Installing a CRD does not bump generation, so the guard in conditionIs cannot
+		// tell a stale False from a fresh one. Observing False first is what makes the
+		// flip a transition rather than a coincidence.
 		expectCondition(k.Name, kartav1alpha1.ConditionCRDExists, metav1.ConditionFalse)
 
-		crd := createCRD(gvk)
+		createCRD(gvk)
+
 		expectCondition(k.Name, kartav1alpha1.ConditionCRDExists, metav1.ConditionTrue)
-		expectCondition(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionTrue)
+		expectConditionSettled(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionTrue)
+	})
+
+	It("checks CRDExists flips back to False when the CRD is removed", func() {
+		gvk := schema.GroupVersionKind{Group: "remove.e2e.run.ai", Version: "v1", Kind: "Widget"}
+		crd := createCRD(gvk)
+		k := createKarta(newKarta("e2e-crd-remove", gvk))
+		expectCondition(k.Name, kartav1alpha1.ConditionCRDExists, metav1.ConditionTrue)
 
 		Expect(k8sClient.Delete(testCtx, crd)).To(Succeed())
+
 		expectCondition(k.Name, kartav1alpha1.ConditionCRDExists, metav1.ConditionFalse)
 		expectConditionSettled(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionFalse)
+	})
+
+	It("stamps the root GVK index labels", func() {
+		k := createKarta(newKarta("e2e-labels", replicaSetGVK))
+		expectCondition(k.Name, kartav1alpha1.ConditionReady, metav1.ConditionTrue)
+
+		Eventually(func(g Gomega) {
+			g.Expect(getKarta(g, k.Name).Labels).To(SatisfyAll(
+				HaveKeyWithValue(kartav1alpha1.LabelRootGroup, replicaSetGVK.Group),
+				HaveKeyWithValue(kartav1alpha1.LabelRootVersion, replicaSetGVK.Version),
+				HaveKeyWithValue(kartav1alpha1.LabelRootKind, replicaSetGVK.Kind),
+			))
+		}, reconcileTimeout, pollInterval).Should(Succeed())
 	})
 
 	It("removes a Karta cleanly on delete", func() {
@@ -73,15 +91,10 @@ var _ = Describe("Karta controller on a live cluster", Serial, func() {
 
 		Expect(k8sClient.Delete(testCtx, k)).To(Succeed())
 
-		// No finalizer today; this is what would catch one added without its release.
 		expectGone(k.Name)
 	})
 })
 
-// An invalid Karta behaves differently per route, so each half gets its own block
-// rather than a branch inside one spec. ValidateCreate runs the same validator the
-// controller runs, so with the webhook on the Karta never exists and no condition is
-// ever written.
 var _ = Describe("an invalid Karta, webhook installed", Serial, Label("webhook"), func() {
 	BeforeEach(func() {
 		if !webhookEnabled() {
@@ -98,7 +111,7 @@ var _ = Describe("an invalid Karta, webhook installed", Serial, Label("webhook")
 		Expect(apierrors.IsNotFound(err)).To(BeTrue(), "a refused create must leave nothing behind")
 	})
 
-	// Uniqueness has no controller-side equivalent, so it is only observable here.
+	// Uniqueness is enforced only at admission, so it is only observable here.
 	It("refuses a second Karta claiming the same root GVK", func() {
 		first := createKarta(newKarta("e2e-unique-first", statefulSetGVK))
 		expectCondition(first.Name, kartav1alpha1.ConditionReady, metav1.ConditionTrue)
@@ -112,7 +125,7 @@ var _ = Describe("an invalid Karta, webhook installed", Serial, Label("webhook")
 var _ = Describe("an invalid Karta, webhook disabled", Serial, Label("no-webhook"), func() {
 	BeforeEach(func() {
 		if webhookEnabled() {
-			Skip("validating webhook is installed, so an invalid Karta never reaches the controller")
+			Skip("validating webhook is installed, so an invalid Karta is refused before any condition is written")
 		}
 	})
 
@@ -127,7 +140,7 @@ var _ = Describe("an invalid Karta, webhook disabled", Serial, Label("no-webhook
 		k := createKarta(newInvalidKarta("e2e-invalid-fixed", daemonSetGVK))
 		expectCondition(k.Name, kartav1alpha1.ConditionValidated, metav1.ConditionFalse)
 
-		// Retried because the controller is patching status underneath this.
+		// Retried because the operator is patching status underneath this.
 		Eventually(func(g Gomega) {
 			cur := getKarta(g, k.Name)
 			cur.Spec.StructureDefinition.RootComponent.StatusDefinition = &kartav1alpha1.StatusDefinition{

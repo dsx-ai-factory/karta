@@ -429,13 +429,13 @@ e2e-up: ## Provision a kind cluster + operators (WORKLOADS=<list>|all|none; KART
 	CERT_MANAGER=$(CERT_MANAGER) \
 	./hack/e2e/up.sh $(WORKLOADS)
 
-# Overall go-test timeout for the controller suite. Separate from E2E_TIMEOUT, which
+# Overall go-test timeout for the operator suite. Separate from E2E_TIMEOUT, which
 # caps the much longer workload-recording run.
-E2E_CONTROLLER_TIMEOUT ?= 15m
+E2E_OPERATOR_TIMEOUT ?= 15m
 
 # Deliberately absent from check-operator: it needs a cluster, and check must not.
-.PHONY: test-e2e
-test-e2e: ## Run the controller e2e against the current cluster (make e2e-up first)
+.PHONY: test-operator-e2e
+test-operator-e2e: ## Run the operator e2e against the current cluster (make e2e-up first)
 	./hack/e2e/karta-operator/test.sh
 
 .PHONY: e2e-down

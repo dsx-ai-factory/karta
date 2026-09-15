@@ -20,7 +20,7 @@ hack/e2e/
     install.sh          standalone: installs Karta in the selected webhook route
     verify.sh           standalone: smoke-tests it via run_smoke
     smoke.yaml          the throwaway Karta the smoke test applies
-    test.sh             runs the controller e2e against the current cluster
+    test.sh             runs the operator e2e against the current cluster
   operators/            the upstream workload operators it exercises
     _common.sh          shared helpers + GitHub Actions logging, sourced by every script
     <name>/
@@ -44,7 +44,7 @@ make e2e-down                        # tear down
 
 The base is the kind cluster, the fake-gpu-operator, and the Karta operator.
 Selecting a subset keeps a run light, and `none` keeps only the base, which is what
-the controller e2e wants. Dependencies are added automatically: kserve pulls
+the operator e2e wants. Dependencies are added automatically: kserve pulls
 knative, dynamo pulls grove.
 
 ## How up.sh runs an operator

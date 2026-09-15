@@ -67,7 +67,7 @@ usage() {
 Usage: $0 [--list] [workload...]
   No workload args (or "all") installs everything. Named args install the base
   plus only those workload operators (and their dependencies). "none" installs
-  the base only, which is what the controller e2e wants.
+  the base only, which is what the operator e2e wants.
   Workloads: ${ALL_WORKLOADS[*]}
   --list    print the resolved install plan and exit
 
